@@ -46,6 +46,10 @@ type Blackboard struct {
 	children    []*Blackboard         // 子黑板
 }
 
+func (b *Blackboard) ThreadID() int {
+	return b.threadID
+}
+
 // TreeMemory
 //  @implement IBlackboardInternal.TreeMemory
 //  @receiver b
@@ -284,6 +288,9 @@ type IBlackboard interface {
 //  含有私有API,业务层请勿调用,避免引发不可预期的后果
 type IBlackboardInternal interface {
 	IBlackboard
+	// ThreadID 获取线程ID
+	//  @return int
+	ThreadID() int
 	// Start 启动,将会开始监听kv
 	//  私有,框架内部使用
 	//  非线程安全

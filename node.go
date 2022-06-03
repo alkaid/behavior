@@ -10,39 +10,16 @@ import (
 
 type NodeState int // 节点状态
 
-const (
-	NodeStateInactive  NodeState = iota // 非活跃
-	NodeStateActive                     // 活跃
-	NodeStateCanceling                  // 正在取消
-)
-
-const (
-	NodeNameRoot = "root"
-)
-
-// NodeParent 获取真实父节点
-//  由于行为树是单例,Node.Parent 获取的父节点只有在非子树root时有效.故有此辅助函数
-//  @param brain
-//  @param node
-//  @return IContainer
-//
-func NodeParent(brain IBrain, node INode) IContainer {
-	if node.Parent() != nil {
-		return node.Parent()
-	}
-	if node.Name() != NodeNameRoot {
-		logger.Log.Error("node's parent is nil!", zap.String("node", node.String()))
-		return nil
-	}
-	p := brain.Blackboard().(IBlackboardInternal).NodeData(node.Id()).RootParent
-	return p
-}
-
 // INode 节点
 //  继承自 Node 的自定义节点须实现 INodeWorker
 //  一般来说,继承自 Node 的子类不应覆写该接口
 type INode interface {
-	IChild
+	// InitNodeWorker 设置回调接口,应该委托给继承树中的叶子子类实现
+	//  @param worker
+	InitNodeWorker(worker INodeWorker)
+	// NodeWorker 获取回调委托
+	//  @return INodeWorker
+	NodeWorker() INodeWorker
 	Init(cfg *config.NodeCfg)
 	Id() string
 	SetId(id string)
@@ -79,14 +56,18 @@ type INode interface {
 	//  @param brain
 	//  @param succeeded
 	Finish(brain IBrain, succeeded bool)
+	// CompositeAncestorFinished 最近的 IComposite 类型的祖先节点关闭时调用
+	//  由于直接父节点可能是装饰节点,所以这里特指“最近的 IComposite 类型的祖先节点”
+	//  @param brain
+	//  @param composite
+	CompositeAncestorFinished(brain IBrain, composite IComposite)
 	String() string
 	Path(brain IBrain) string
 }
 
-// INodeWorker 节点生命周期回调
+// INodeWorker Node 中会回调的方法,应该委托给继承树中的叶子子类实现
 //  继承自 Node 的自定义节点须覆写该接口
 type INodeWorker interface {
-	IChildWorker
 	// OnStart INode.Start 的回调
 	//  @param brain
 	OnStart(brain IBrain)
@@ -96,27 +77,15 @@ type INodeWorker interface {
 	// OnParseProperties 延迟解析properties INode.Init 的回调
 	//  @param properties
 	OnParseProperties(properties json.RawMessage) any
-}
 
-// IChild 作为子节点时的接口
-type IChild interface {
 	// Parent 获取父节点
 	//  注意由于行为数是单例,如果当前节点是root,parent只能为nil.子树root的parent应该从黑板设置和获取.便捷函数为 NodeParent
 	//  @return IContainer
-	Parent() IContainer
+	Parent(brain IBrain) IContainer
 	// SetParent 设置父节点
 	//  注意由于行为数是单例,如果当前节点是root,只应该设置为nil.子树root的parent应该从黑板设置和获取
 	//  @param parent
-	SetParent(parent IContainer)
-	// CompositeAncestorFinished 最近的 IComposite 类型的祖先节点关闭时调用
-	//  由于直接父节点可能是装饰节点,所以这里特指“最近的 IComposite 类型的祖先节点”
-	//  @param brain
-	//  @param composite
-	CompositeAncestorFinished(brain IBrain, composite IComposite)
-}
-
-// IChildWorker 作为子节点时的生命周期回调
-type IChildWorker interface {
+	SetParent(brain IBrain, parent IContainer)
 	// OnCompositeAncestorFinished IChild.CompositeAncestorFinished 的回调
 	//  目前仅用来给装饰器移除监察函数
 	//  @param brain
@@ -131,6 +100,7 @@ var _ INodeWorker = (*Node)(nil)
 //  @implement INode
 //  @implement INodeWorker
 type Node struct {
+	INodeWorker
 	parent     IContainer // 父节点
 	root       IRoot      // 当前子树的根节点
 	name       string     // 节点名
@@ -149,7 +119,23 @@ func (n *Node) Init(cfg *config.NodeCfg) {
 	n.name = cfg.Name
 	n.title = cfg.Title
 	n.category = cfg.Category
-	n.properties = n.OnParseProperties(cfg.Properties)
+}
+
+// InitNodeWorker
+//  @implement INode.InitNodeWorker
+//  @receiver n
+//  @param worker
+func (n *Node) InitNodeWorker(worker INodeWorker) {
+	n.INodeWorker = worker
+	n.properties = n.INodeWorker.OnParseProperties(n.properties.(json.RawMessage))
+}
+
+// NodeWorker
+//  @implement INode.NodeWorker
+//  @receiver n
+//  @return INodeWorker
+func (n *Node) NodeWorker() INodeWorker {
+	return n.INodeWorker
 }
 
 func (n *Node) Name() string {
@@ -197,7 +183,7 @@ func (n *Node) SetProperties(properties any) {
 //  @receiver n
 //  @return IContainer
 //
-func (n *Node) Parent() IContainer {
+func (n *Node) Parent(brain IBrain) IContainer {
 	return n.parent
 }
 
@@ -215,13 +201,7 @@ func (n *Node) Root() IRoot {
 //  @receiver n
 //  @param parent
 //
-func (n *Node) SetParent(parent IContainer) {
-	// root节点的parent只允许设置为nil,子树的root获取parent须通过黑板
-	if parent != nil {
-		if _, ok := any(n).(IRoot); ok {
-			logger.Log.Fatal("root node's parent only can be nil")
-		}
-	}
+func (n *Node) SetParent(brain IBrain, parent IContainer) {
 	n.parent = parent
 }
 
@@ -253,7 +233,7 @@ func (n *Node) Start(brain IBrain) {
 		return
 	}
 	brain.Blackboard().(IBlackboardInternal).NodeData(n.id).State = NodeStateActive
-	n.OnStart(brain)
+	n.INodeWorker.OnStart(brain)
 }
 
 // Cancel
@@ -268,7 +248,7 @@ func (n *Node) Cancel(brain IBrain) {
 		return
 	}
 	brain.Blackboard().(IBlackboardInternal).NodeData(n.id).State = NodeStateCanceling
-	n.OnCancel(brain)
+	n.INodeWorker.OnCancel(brain)
 }
 
 // Finish
@@ -285,7 +265,7 @@ func (n *Node) Finish(brain IBrain, succeeded bool) {
 	}
 	brain.Blackboard().(IBlackboardInternal).NodeData(n.id).State = NodeStateInactive
 	// TODO debug info
-	parent := NodeParent(brain, n)
+	parent := n.INodeWorker.Parent(brain)
 	if parent != nil {
 		parent.ChildFinished(brain, n, succeeded)
 	}
@@ -298,7 +278,7 @@ func (n *Node) Finish(brain IBrain, succeeded bool) {
 //  @param composite
 //
 func (n *Node) CompositeAncestorFinished(brain IBrain, composite IComposite) {
-	n.OnCompositeAncestorFinished(brain, composite)
+	n.INodeWorker.OnCompositeAncestorFinished(brain, composite)
 }
 
 func (n *Node) String() string {
@@ -306,7 +286,7 @@ func (n *Node) String() string {
 }
 
 func (n *Node) Path(brain IBrain) string {
-	parent := NodeParent(brain, n)
+	parent := n.INodeWorker.Parent(brain)
 	if parent != nil {
 		return parent.Path(brain) + "/" + n.name
 	}
