@@ -62,15 +62,24 @@ func NewLogger(cfg zap.Config, opts ...Option) *Logger {
 }
 
 // SetLevel 动态改变打印级别
-//  @param level 支持的类型为int,zapcore.Level,string,int,zap.AtomicLevel. 建议使用string
+//  @param level 支持的类型为 int,int8,zapcore.Level,string,zap.AtomicLevel. 建议使用string
 //  支持的string为 DEBUG|INFO|WARN|ERROR|DPANIC|PANIC|FATAL
-func (l *Logger) SetLevel(level interface{}) {
+func (l *Logger) SetLevel(level any) {
 	var err error
 	switch val := level.(type) {
 	case *zap.AtomicLevel:
 		l.Level.SetLevel(val.Level())
-	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-		lnew := level.(zapcore.Level)
+	case zapcore.Level:
+		l.Level.SetLevel(val)
+	case int:
+		lnew := zapcore.Level(val)
+		if lnew >= zapcore.DebugLevel && lnew <= zapcore.FatalLevel {
+			l.Level.SetLevel(lnew)
+		} else {
+			err = errors.New("illegal log Level")
+		}
+	case int8:
+		lnew := zapcore.Level(val)
 		if lnew >= zapcore.DebugLevel && lnew <= zapcore.FatalLevel {
 			l.Level.SetLevel(lnew)
 		} else {

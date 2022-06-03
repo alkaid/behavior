@@ -1,8 +1,8 @@
 package thread
 
 import (
-	"hash/crc32"
-	"strconv"
+	"math"
+	"sync"
 	"time"
 
 	"github.com/alkaid/behavior/logger"
@@ -10,42 +10,42 @@ import (
 	"go.uber.org/zap"
 )
 
-var pool *ants.Pool // 线程池,主要用于分离session线程
-const taskBuffer = ants.DefaultStatefulTaskBuffer * 10
+const MainThreadID = math.MaxInt // 主线程ID
 
-// InitDefaultPool 用默认参数初始化全局线程池
-func InitDefaultPool() {
+var pool *ants.Pool // 线程池,主要用于分离session线程
+
+// InitPool 用默认参数初始化全局线程池
+func InitPool(p *ants.Pool) {
 	if pool != nil {
 		logger.Log.Warn("init goroutine pool duplicate")
 		return
 	}
-	p, err := ants.NewPool(ants.DefaultAntsPoolSize, ants.WithTaskBuffer(taskBuffer), ants.WithExpiryDuration(time.Hour))
+	if p != nil {
+		pool = p
+		return
+	}
+	p, err := ants.NewPool(ants.DefaultAntsPoolSize, ants.WithTaskBuffer(ants.DefaultStatefulTaskBuffer), ants.WithExpiryDuration(time.Hour))
 	if err != nil {
 		logger.Log.Fatal("create ants pool error", zap.Error(err))
 	}
 	pool = p
 }
 
-// InitWithPool 用指定线程池初始化全局线程池
-//  @param p
-//
-func InitWithPool(p *ants.Pool) {
+func ReleaseTableGoPool() {
 	if pool != nil {
-		logger.Log.Warn("init goroutine pool duplicate")
-		return
+		pool.Release()
 	}
-	pool = p
 }
 
 // GoByID 根据指定的goroutineID派发线程
 //  @receiver h
 //  @param goID 若>0,派发到指定线程,否则随机派发
 //  @param task
-func GoByID(goID int, task func()) {
+func GoByID[T int | int32 | int64](goID T, task func()) {
 	if goID > 0 {
-		err := pool.SubmitWithID(goID, task)
+		err := pool.SubmitWithID(int(goID), task)
 		if err != nil {
-			logger.Log.Error("submit task with id error", zap.Error(err), zap.Int("goID", goID))
+			logger.Log.Error("submit goroutine with id error", zap.Error(err), zap.Int("goID", int(goID)))
 			return
 		}
 	} else {
@@ -53,19 +53,32 @@ func GoByID(goID int, task func()) {
 	}
 }
 
-// GoByUID 根据uid派发任务线程
-//  @param uid
+func WaitByID[T int | int32 | int64](goID T, task func()) {
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	GoByID(goID, func() {
+		task()
+		wg.Done()
+	})
+	wg.Wait()
+}
+
+// GoMain 派发到主线程
 //  @param task
-func GoByUID(uid string, task func()) {
-	if uid == "" {
-		logger.Log.Error("uid can not be empty")
-	}
-	goID, err := strconv.Atoi(uid)
-	if err != nil {
-		logger.Log.Warn("can't atoi uid", zap.String("uid", uid), zap.Error(err))
-		goID = int(crc32.ChecksumIEEE([]byte(uid)))
-	}
-	GoByID(goID, task)
+func GoMain(task func()) {
+	GoByID(MainThreadID, task)
+}
+
+// WaitMain 派发到主线程并等待执行完成
+//  @param task
+func WaitMain(task func()) {
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	GoMain(func() {
+		task()
+		wg.Done()
+	})
+	wg.Wait()
 }
 
 // Go 从默认线程池获取一个goroutine并派发任务
@@ -73,7 +86,7 @@ func GoByUID(uid string, task func()) {
 func Go(task func()) {
 	err := ants.Submit(task)
 	if err != nil {
-		logger.Log.Error("submit task error", zap.Error(err))
+		logger.Log.Error("submit goroutine error", zap.Error(err))
 		return
 	}
 }

@@ -1,6 +1,9 @@
 package behavior
 
 import (
+	"encoding/json"
+
+	"github.com/alkaid/behavior/config"
 	"github.com/alkaid/behavior/logger"
 	"go.uber.org/zap"
 )
@@ -40,6 +43,7 @@ func NodeParent(brain IBrain, node INode) IContainer {
 //  一般来说,继承自 Node 的子类不应覆写该接口
 type INode interface {
 	IChild
+	Init(cfg *config.NodeCfg)
 	Id() string
 	SetId(id string)
 	Title() string
@@ -89,6 +93,9 @@ type INodeWorker interface {
 	// OnCancel INode.Cancel 的回调
 	//  @param brain
 	OnCancel(brain IBrain)
+	// OnParseProperties 延迟解析properties INode.Init 的回调
+	//  @param properties
+	OnParseProperties(properties json.RawMessage) any
 }
 
 // IChild 作为子节点时的接口
@@ -121,14 +128,28 @@ var _ INode = (*Node)(nil)
 var _ INodeWorker = (*Node)(nil)
 
 // Node 节点基类
+//  @implement INode
+//  @implement INodeWorker
 type Node struct {
-	parent     IContainer
-	root       IRoot
-	name       string
-	id         string
-	title      string
-	category   string
-	properties any
+	parent     IContainer // 父节点
+	root       IRoot      // 当前子树的根节点
+	name       string     // 节点名
+	id         string     // 唯一ID
+	title      string     // 描述
+	category   string     // 类型
+	properties any        // 自定义属性,须由子类自行解析
+}
+
+func (n *Node) Init(cfg *config.NodeCfg) {
+	err := cfg.Valid()
+	if err != nil {
+		logger.Log.Fatal("", zap.Error(err))
+	}
+	n.id = cfg.Id
+	n.name = cfg.Name
+	n.title = cfg.Title
+	n.category = cfg.Category
+	n.properties = n.OnParseProperties(cfg.Properties)
 }
 
 func (n *Node) Name() string {
@@ -318,4 +339,8 @@ func (n *Node) OnCancel(brain IBrain) {
 //
 func (n *Node) OnCompositeAncestorFinished(brain IBrain, composite IComposite) {
 	logger.Log.Debug(n.String() + " OnCompositeAncestorFinished")
+}
+
+func (n *Node) OnParseProperties(properties json.RawMessage) any {
+	return nil
 }

@@ -20,18 +20,18 @@ type TimeWheelPool struct {
 }
 
 // NewTimeWheelPool
-//  @param size
-//  @param tick
-//  @param bucketsNum
+//  @param size 池子容量
+//  @param interval 时间轮帧间隔
+//  @param numSlots 时间槽数量 时间轮第一层总时长=interval*numSlots
 //  @return *TimeWheelPool
 //
-func NewTimeWheelPool(size int, tick time.Duration, bucketsNum int) *TimeWheelPool {
+func NewTimeWheelPool(size int, interval time.Duration, numSlots int) *TimeWheelPool {
 	twp := &TimeWheelPool{
 		pool: make([]*timingwheel.TimingWheel, size),
 		size: int64(size),
 	}
-	for index := 0; index < bucketsNum; index++ {
-		tw := timingwheel.NewTimingWheel(tick, int64(bucketsNum))
+	for index := 0; index < size; index++ {
+		tw := timingwheel.NewTimingWheel(interval, int64(numSlots))
 		twp.pool[index] = tw
 	}
 	return twp
