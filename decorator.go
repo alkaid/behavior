@@ -21,17 +21,17 @@ type Decorator struct {
 //  @implement IDecorator.Decorate
 //  @receiver n
 //  @param decorated
-func (n *Decorator) Decorate(decorated INode) {
-	n.decorated = decorated
+func (d *Decorator) Decorate(decorated INode) {
+	d.decorated = decorated
 }
 
 // SetRoot
 //  @override Node.SetRoot
 //  @receiver n
 //  @param root
-func (n *Decorator) SetRoot(root IRoot) {
-	n.Container.SetRoot(root)
-	n.decorated.SetRoot(root)
+func (d *Decorator) SetRoot(root IRoot) {
+	d.Container.SetRoot(root)
+	d.decorated.SetRoot(root)
 }
 
 // CompositeAncestorFinished
@@ -39,7 +39,18 @@ func (n *Decorator) SetRoot(root IRoot) {
 //  @receiver n
 //  @param brain
 //  @param composite
-func (n *Decorator) CompositeAncestorFinished(brain IBrain, composite IComposite) {
-	n.Container.CompositeAncestorFinished(brain, composite)
-	n.decorated.CompositeAncestorFinished(brain, composite)
+func (d *Decorator) CompositeAncestorFinished(brain IBrain, composite IComposite) {
+	d.Container.CompositeAncestorFinished(brain, composite)
+	// 向下传播
+	d.decorated.CompositeAncestorFinished(brain, composite)
+}
+
+// OnAbort
+//  @override Node.OnAbort
+//  @receiver r
+//  @param brain
+func (d *Decorator) OnAbort(brain IBrain) {
+	d.Container.OnAbort(brain)
+	// 向下传播
+	d.decorated.Abort(brain)
 }

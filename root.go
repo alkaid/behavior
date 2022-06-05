@@ -27,6 +27,14 @@ type Root struct {
 	Decorator
 }
 
+// CanMounted
+//  @override Node.CanMounted
+//  @receiver r
+//  @return bool
+func (r *Root) CanMounted() bool {
+	return true
+}
+
 // IsSubTree
 //  @implement IRoot.IsSubTree
 //  @receiver r
@@ -51,17 +59,6 @@ func (r *Root) OnParseProperties(properties json.RawMessage) any {
 	return prop
 }
 
-// Parent
-//  @override Node.Parent
-//  @receiver n
-//  @return IContainer
-//
-func (r *Root) Parent(brain IBrain) IContainer {
-	// root节点的parent获取须通过blackboard
-	p := brain.Blackboard().(IBlackboardInternal).NodeData(r.Id()).RootParent
-	return p
-}
-
 // SetRoot
 //  @override Decorator.SetRoot
 //  @receiver n
@@ -71,18 +68,6 @@ func (r *Root) SetRoot(root IRoot) {
 		logger.Log.Fatal("root's root must be self", zap.String("selfID", r.Id()), zap.String("inID", root.Id()))
 	}
 	r.Decorator.SetRoot(root)
-}
-
-// SetParent
-//  @implement Node.SetParent
-//  @receiver n
-//  @param parent
-//
-func (r *Root) SetParent(brain IBrain, parent IContainer) {
-	// 子树的root设置parent须通过黑板
-	if parent != nil {
-		brain.Blackboard().(IBlackboardInternal).NodeData(r.id).RootParent = parent
-	}
 }
 
 // OnStart
@@ -99,15 +84,18 @@ func (r *Root) OnStart(brain IBrain) {
 	r.decorated.Start(brain)
 }
 
-// OnCancel
-//  @override Node.OnCancel
+// OnAbort
+//  @override Node.OnAbort
 //  @receiver r
 //  @param brain
-func (r *Root) OnCancel(brain IBrain) {
-	if brain.Blackboard().(IBlackboardInternal).NodeData(r.decorated.Id()).State == NodeStateActive {
-		r.decorated.Cancel(brain)
+func (r *Root) OnAbort(brain IBrain) {
+	r.Node.OnAbort(brain)
+	if r.IsActive(brain) {
+		r.decorated.Abort(brain)
+		return
 	}
 	// TODO 这里是否有异步异常情况未考虑
+	logger.Log.Warn("can only abort active root")
 }
 
 // OnChildFinished
@@ -118,8 +106,8 @@ func (r *Root) OnCancel(brain IBrain) {
 //  @param succeeded
 func (r *Root) OnChildFinished(brain IBrain, child INode, succeeded bool) {
 	r.Decorator.OnChildFinished(brain, child, succeeded)
-	// 如果是外部触发取消的,结束运行
-	if brain.Blackboard().(IBlackboardInternal).NodeData(r.id).State == NodeStateCanceling {
+	// 如果是外部触发中断的,结束运行
+	if brain.Blackboard().(IBlackboardInternal).NodeData(r.id).State == NodeStateAborting {
 		// 非子树要关闭黑板监听
 		if !r.IsSubTree(brain) {
 			brain.Blackboard().(IBlackboardInternal).Stop()
@@ -145,15 +133,15 @@ func (r *Root) OnChildFinished(brain IBrain, child INode, succeeded bool) {
 	}
 }
 
-// SafeCancelTree 若是主树,取消运行.线程安全
+// SafeAbortTree 若是主树,中断运行. 是线程安全的
 //  @receiver r
 //  @param brain
-func (r *Root) SafeCancelTree(brain IBrain) {
+func (r *Root) SafeAbortTree(brain IBrain) {
 	if r.IsSubTree(brain) {
-		logger.Log.Error("root is subtree,cannot cancel", zap.String("id", r.id))
+		logger.Log.Error("root is subtree,cannot abort", zap.String("id", r.id))
 		return
 	}
 	thread.GoByID(brain.Blackboard().(IBlackboardInternal).ThreadID(), func() {
-		r.Cancel(brain)
+		r.Abort(brain)
 	})
 }

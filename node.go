@@ -31,6 +31,9 @@ type INode interface {
 	SetProperties(properties any)
 	Name() string
 	SetName(name string)
+	IsActive(brain IBrain) bool
+	IsInactive(brain IBrain) bool
+	IsAborting(brain IBrain) bool
 	// Root 获取root
 	//  注意由于行为数是单例,如果当前节点是root(子树root),只应该从黑板设置和获取root
 	//  @return IRoot
@@ -42,12 +45,12 @@ type INode interface {
 	// Start 开始执行
 	//  @param brain
 	Start(brain IBrain)
-	// Cancel 取消执行
+	// Abort 中断(终止)执行
 	//  一般来说只应该由 IDecorator 调用
-	//  一般来说,取消链路为:
-	//   节点A Cancel-> A INodeWorker.OnCancel-> 子节点B Cancel (其他所有子结点同理)-> B INodeWorker.OnCancel-> B Finish-> A IContainer.ChildFinished-> <所有子节点都完成了?true:> A Finish-> 继续按上诉链路回溯上一层
+	//  一般来说,中断链路为:
+	//   节点A Abort-> A INodeWorker.OnAbort-> 子节点B Abort (其他所有子结点同理)-> B INodeWorker.OnAbort-> B Finish-> A IContainer.ChildFinished-> <所有子节点都完成了?true:> A Finish-> 继续按上诉链路回溯上一层
 	//  @param brain
-	Cancel(brain IBrain)
+	Abort(brain IBrain)
 	// Finish 完成执行
 	//  这里是真正的停止,会将执行结果 Result 回溯给父节点
 	//  注意: Finish 应该是你的最后一个调用,在调用 Finish 后不要再修改任何状态或调用任何东西,否则将产生不可预知的后果
@@ -61,36 +64,40 @@ type INode interface {
 	//  @param brain
 	//  @param composite
 	CompositeAncestorFinished(brain IBrain, composite IComposite)
-	String() string
+	String(brain IBrain) string
 	Path(brain IBrain) string
+	// Parent 获取父节点
+	//  @return IContainer
+	Parent(brain IBrain) IContainer
+	// SetParent 设置父节点
+	//  @param parent
+	SetParent(brain IBrain, parent IContainer)
 }
 
 // INodeWorker Node 中会回调的方法,应该委托给继承树中的叶子子类实现
 //  继承自 Node 的自定义节点须覆写该接口
 type INodeWorker interface {
-	// OnStart INode.Start 的回调
+	// OnStart Node.Start 的回调
 	//  @param brain
 	OnStart(brain IBrain)
-	// OnCancel INode.Cancel 的回调
+	// OnAbort Node.Abort 的回调
 	//  @param brain
-	OnCancel(brain IBrain)
-	// OnParseProperties 延迟解析properties INode.Init 的回调
+	OnAbort(brain IBrain)
+	// OnParseProperties 延迟解析properties Node.Init 的回调
 	//  @param properties
 	OnParseProperties(properties json.RawMessage) any
-
-	// Parent 获取父节点
-	//  注意由于行为数是单例,如果当前节点是root,parent只能为nil.子树root的parent应该从黑板设置和获取.便捷函数为 NodeParent
-	//  @return IContainer
-	Parent(brain IBrain) IContainer
-	// SetParent 设置父节点
-	//  注意由于行为数是单例,如果当前节点是root,只应该设置为nil.子树root的parent应该从黑板设置和获取
-	//  @param parent
-	SetParent(brain IBrain, parent IContainer)
-	// OnCompositeAncestorFinished IChild.CompositeAncestorFinished 的回调
+	// OnCompositeAncestorFinished Node.CompositeAncestorFinished 的回调
 	//  目前仅用来给装饰器移除监察函数
 	//  @param brain
 	//  @param composite
 	OnCompositeAncestorFinished(brain IBrain, composite IComposite)
+	// CanMounted 是否可以被挂载,会被 Node.Parent 和 Node.SetParent 回调
+	//  @return bool
+	CanMounted() bool
+	// OnString Node.String 的回调
+	//  @param brain
+	//  @return string
+	OnString(brain IBrain) string
 }
 
 var _ INode = (*Node)(nil)
@@ -178,13 +185,40 @@ func (n *Node) SetProperties(properties any) {
 	n.properties = properties
 }
 
+func (n *Node) IsActive(brain IBrain) bool {
+	return brain.Blackboard().(IBlackboardInternal).NodeData(n.id).State == NodeStateActive
+}
+func (n *Node) IsInactive(brain IBrain) bool {
+	return brain.Blackboard().(IBlackboardInternal).NodeData(n.id).State == NodeStateInactive
+}
+
+func (n *Node) IsAborting(brain IBrain) bool {
+	return brain.Blackboard().(IBlackboardInternal).NodeData(n.id).State == NodeStateAborting
+}
+
 // Parent
 //  @implement IChild.Parent()
 //  @receiver n
 //  @return IContainer
 //
 func (n *Node) Parent(brain IBrain) IContainer {
+	// 注意行为树是单例,故动态挂载的节点从黑板获取父节点,目前只有root可以
+	if n.INodeWorker.CanMounted() {
+		return brain.Blackboard().(IBlackboardInternal).NodeData(n.id).MountParent
+	}
 	return n.parent
+}
+
+// SetParent
+//  @implement IChild.SetParent
+//  @receiver n
+//  @param parent
+//
+func (n *Node) SetParent(brain IBrain, parent IContainer) {
+	if n.INodeWorker.CanMounted() {
+		brain.Blackboard().(IBlackboardInternal).NodeData(n.id).MountParent = parent
+	}
+	n.parent = parent
 }
 
 // Root
@@ -196,27 +230,12 @@ func (n *Node) Root() IRoot {
 	return n.root
 }
 
-// SetParent
-//  @implement IChild.SetParent
-//  @receiver n
-//  @param parent
-//
-func (n *Node) SetParent(brain IBrain, parent IContainer) {
-	n.parent = parent
-}
-
 // SetRoot
 //  @implement INode.SetRoot
 //  @receiver n
 //  @param root
 //
 func (n *Node) SetRoot(root IRoot) {
-	// root节点的root只允许设置为自己,子树的root获取主树root须通过黑板
-	if root.Id() != n.id {
-		if _, ok := any(n).(IRoot); ok {
-			logger.Log.Fatal("root node's root only can be nil")
-		}
-	}
 	n.root = root
 }
 
@@ -227,28 +246,28 @@ func (n *Node) SetRoot(root IRoot) {
 //
 func (n *Node) Start(brain IBrain) {
 	// TODO debug info
-	state := brain.Blackboard().(IBlackboardInternal).NodeData(n.id).State
-	if state != NodeStateInactive {
-		logger.Log.Error("can only start inactive nodes")
+	nodeData := brain.Blackboard().(IBlackboardInternal).NodeData(n.id)
+	if nodeData.State != NodeStateInactive {
+		logger.Log.Fatal("can only start inactive nodes")
 		return
 	}
-	brain.Blackboard().(IBlackboardInternal).NodeData(n.id).State = NodeStateActive
+	nodeData.State = NodeStateActive
 	n.INodeWorker.OnStart(brain)
 }
 
-// Cancel
-//  @implement INode.Cancel
+// Abort
+//  @implement INode.Abort
 //  @receiver n
 //  @param brain
 //
-func (n *Node) Cancel(brain IBrain) {
-	state := brain.Blackboard().(IBlackboardInternal).NodeData(n.id).State
-	if state != NodeStateActive {
-		logger.Log.Error("can only cancel active nodes")
+func (n *Node) Abort(brain IBrain) {
+	nodeData := brain.Blackboard().(IBlackboardInternal).NodeData(n.id)
+	if nodeData.State != NodeStateActive {
+		logger.Log.Fatal("can only abort active nodes")
 		return
 	}
-	brain.Blackboard().(IBlackboardInternal).NodeData(n.id).State = NodeStateCanceling
-	n.INodeWorker.OnCancel(brain)
+	nodeData.State = NodeStateAborting
+	n.INodeWorker.OnAbort(brain)
 }
 
 // Finish
@@ -258,14 +277,14 @@ func (n *Node) Cancel(brain IBrain) {
 //  @param succeeded
 //
 func (n *Node) Finish(brain IBrain, succeeded bool) {
-	state := brain.Blackboard().(IBlackboardInternal).NodeData(n.id).State
-	if state == NodeStateInactive {
-		logger.Log.Error("called 'Finish' while in state NodeStateInactive, something is wrong!")
+	nodeData := brain.Blackboard().(IBlackboardInternal).NodeData(n.id)
+	if nodeData.State == NodeStateInactive {
+		logger.Log.Fatal("called 'Finish' while in state NodeStateInactive, something is wrong!")
 		return
 	}
-	brain.Blackboard().(IBlackboardInternal).NodeData(n.id).State = NodeStateInactive
+	nodeData.State = NodeStateInactive
 	// TODO debug info
-	parent := n.INodeWorker.Parent(brain)
+	parent := n.Parent(brain)
 	if parent != nil {
 		parent.ChildFinished(brain, n, succeeded)
 	}
@@ -281,12 +300,12 @@ func (n *Node) CompositeAncestorFinished(brain IBrain, composite IComposite) {
 	n.INodeWorker.OnCompositeAncestorFinished(brain, composite)
 }
 
-func (n *Node) String() string {
-	return n.name + "(" + n.title + ")"
+func (n *Node) String(brain IBrain) string {
+	return n.INodeWorker.OnString(brain)
 }
 
 func (n *Node) Path(brain IBrain) string {
-	parent := n.INodeWorker.Parent(brain)
+	parent := n.Parent(brain)
 	if parent != nil {
 		return parent.Path(brain) + "/" + n.name
 	}
@@ -299,28 +318,49 @@ func (n *Node) Path(brain IBrain) string {
 //  @param brain
 //
 func (n *Node) OnStart(brain IBrain) {
-	logger.Log.Debug(n.String() + " OnStart")
+	logger.Log.Debug(n.String(brain) + " OnStart")
 }
 
-// OnCancel
-//  @implement INodeWorker.OnCancel
+// OnAbort
+//  @implement INodeWorker.OnAbort
 //  @receiver n
 //  @param brain
 //
-func (n *Node) OnCancel(brain IBrain) {
-	logger.Log.Debug(n.String() + " OnCancel")
+func (n *Node) OnAbort(brain IBrain) {
+	logger.Log.Debug(n.String(brain) + " OnAbort")
 }
 
 // OnCompositeAncestorFinished
-//  @implement IChildWorker.OnCompositeAncestorFinished
+//  @implement INodeWorker.OnCompositeAncestorFinished
 //  @receiver n
 //  @param brain
 //  @param composite
 //
 func (n *Node) OnCompositeAncestorFinished(brain IBrain, composite IComposite) {
-	logger.Log.Debug(n.String() + " OnCompositeAncestorFinished")
+	logger.Log.Debug(n.String(brain) + " OnCompositeAncestorFinished")
 }
 
+// OnParseProperties
+//  @implement INodeWorker.OnParseProperties
+//  @receiver n
+//  @param properties
+//  @return any
 func (n *Node) OnParseProperties(properties json.RawMessage) any {
 	return nil
+}
+
+// CanMounted
+//  @implement INodeWorker.CanMounted
+//  @receiver n
+//  @return bool
+func (n *Node) CanMounted() bool {
+	return false
+}
+
+// OnString
+//  @implement INodeWorker.OnString 的回调
+//  @param brain
+//  @return string
+func (n *Node) OnString(brain IBrain) string {
+	return n.name + "(" + n.title + ")"
 }

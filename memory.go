@@ -43,6 +43,8 @@ func MapValue[T any](m Memory, key string) (T, bool) {
 
 // NodeData 节点数据
 type NodeData struct {
-	State      NodeState  // 节点状态
-	RootParent IContainer // 父节点,仅当自己是子树root时有效,非root请使用 Node.Parent()
+	State        NodeState  // 节点状态
+	MountParent  IContainer // 父节点,仅 Root 有效
+	Observing    bool       // 是否监听中,仅 ObservingDecorator 及其派生类有效
+	currentChild int        // 当前运行中的子节点索引
 }
