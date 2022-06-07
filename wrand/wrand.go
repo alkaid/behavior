@@ -1,10 +1,15 @@
 package wrand
 
 import (
+	"crypto/rand"
 	"errors"
-	"github.com/samber/lo"
-	"math/rand"
+	"math/big"
 	"sort"
+
+	"go.uber.org/zap"
+
+	"github.com/alkaid/behavior/logger"
+	"github.com/samber/lo"
 )
 
 // Choice is a generic wrapper that can be used to add weights for any item.
@@ -106,24 +111,13 @@ var (
 //
 // Utilizes global rand as the source of randomness.
 func (c Chooser) Pick() (key any, item interface{}) {
-	r := rand.Intn(c.max) + 1
-	i := searchInts(c.totals, r)
+	r, err := rand.Int(rand.Reader, big.NewInt(int64(c.max)))
+	if err != nil {
+		logger.Log.Error("", zap.Error(err))
+		r = big.NewInt(0)
+	}
+	i := searchInts(c.totals, int(r.Int64()+1))
 	return c.data[i].Key, c.data[i].Item
-}
-
-// PickSource returns a single weighted random Choice.Item from the Chooser,
-// utilizing the provided *rand.Rand source rs for randomness.
-//
-// The primary use-case for this is avoid lock contention from the global random
-// source if utilizing Chooser(s) from multiple goroutines in extremely
-// high-throughput situations.
-//
-// It is the responsibility of the caller to ensure the provided rand.Source is
-// free from thread safety issues.
-func (c Chooser) PickSource(rs *rand.Rand) interface{} {
-	r := rs.Intn(c.max) + 1
-	i := searchInts(c.totals, r)
-	return c.data[i].Item
 }
 
 // The standard library sort.SearchInts() just wraps the generic sort.Search()

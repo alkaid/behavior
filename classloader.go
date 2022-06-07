@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/alkaid/behavior/bcore"
+
 	"github.com/alkaid/behavior/config"
 
 	"github.com/alkaid/behavior/logger"
@@ -27,10 +29,10 @@ func NewClassLoader() *ClassLoader {
 //  @param cfg
 //  @return INode
 //  @return error
-func (l *ClassLoader) New(name string, cfg *config.NodeCfg) (INode, error) {
+func (l *ClassLoader) New(name string, cfg *config.NodeCfg) (bcore.INode, error) {
 	var err error
 	if v, ok := l.registry[name]; ok {
-		c := reflect.New(v).Interface().(INode)
+		c := reflect.New(v).Interface().(bcore.INode)
 		c.Init(cfg)
 		return c, nil
 	} else {
@@ -53,7 +55,7 @@ func (l *ClassLoader) Contains(name string) bool {
 //  @param name 可以为空,为空时使用节点的struct名称
 //  @param c
 //
-func (l *ClassLoader) RegisterWithName(name string, node INode) {
+func (l *ClassLoader) RegisterWithName(name string, node bcore.INode) {
 	elem := reflect.TypeOf(node).Elem()
 	if name == "" {
 		name = elem.Name()
@@ -67,6 +69,6 @@ func (l *ClassLoader) RegisterWithName(name string, node INode) {
 // Register 注册节点类,注册名为节点的struct名称
 //  @receiver l
 //  @param node
-func (l *ClassLoader) Register(node INode) {
+func (l *ClassLoader) Register(node bcore.INode) {
 	l.RegisterWithName("", node)
 }

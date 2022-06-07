@@ -1,4 +1,4 @@
-package behavior
+package bcore
 
 import (
 	"github.com/alkaid/behavior/thread"

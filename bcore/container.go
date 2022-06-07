@@ -1,4 +1,4 @@
-package behavior
+package bcore
 
 // IContainer 容器:可以挂载子节点的节点
 type IContainer interface {

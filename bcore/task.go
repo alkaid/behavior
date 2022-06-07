@@ -1,4 +1,4 @@
-package behavior
+package bcore
 
 type Task struct {
 	Node

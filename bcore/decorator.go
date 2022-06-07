@@ -1,4 +1,4 @@
-package behavior
+package bcore
 
 // IDecorator 装饰器,修饰子节点
 type IDecorator interface {

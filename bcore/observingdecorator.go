@@ -1,4 +1,4 @@
-package behavior
+package bcore
 
 // IObservingProperties 观察者装饰器属性
 type IObservingProperties interface {

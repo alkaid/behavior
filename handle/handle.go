@@ -28,12 +28,10 @@ func NewHandler() *Handler {
 	}
 }
 
-// HandlerPool ...
 type HandlerPool struct {
 	handlers map[string]*Handler // all handler method
 }
 
-// NewHandlerPool ...
 func NewHandlerPool() *HandlerPool {
 	return &HandlerPool{
 		handlers: make(map[string]*Handler),
@@ -48,11 +46,11 @@ func NewHandlerPool() *HandlerPool {
 //  @return method
 //  @return err
 func (h *HandlerPool) GetMethod(receiverName string, receiver any, methodName string) (method *reflect.Method, err error) {
-	if nil == receiver {
+	if receiver == nil {
 		err = errors.New("receiver is nil")
 		return
 	}
-	if "" == methodName {
+	if methodName == "" {
 		err = errors.New("method name is nil")
 		return
 	}
@@ -81,13 +79,13 @@ func (h *HandlerPool) GetMethod(receiverName string, receiver any, methodName st
 			handler.Methods[methodName] = method
 		} else {
 			err = errors.WithStack(fmt.Errorf("cannot find method type:%s,method:%s", receiverName, methodName))
-			return
+			return nil, err
 		}
 	} else {
 		logger.Log.Debug("receiver method has already register", zap.String("type", receiverName), zap.String("method", methodName))
 	}
 	h.handlers[receiverName] = handler
-	return
+	return method, err
 }
 
 // ProcessHandlerMessage handle方法发射调用

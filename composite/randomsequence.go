@@ -1,6 +1,8 @@
 package composite
 
-import "github.com/alkaid/behavior"
+import (
+	"github.com/alkaid/behavior/bcore"
+)
 
 // RandomSequence 随机序列,节点按从左到右的顺序随机执行其子节点。当其中一个子节点失败时，序列节点也将停止执行。如果有子节点失败，那么序列就会失败。如果该序列的所有子节点运行都成功执行，则序列节点成功。
 type RandomSequence struct {
@@ -12,7 +14,7 @@ type RandomSequence struct {
 //  @override Node.InitNodeWorker
 //  @receiver c
 //  @param worker
-func (r *RandomSequence) InitNodeWorker(worker behavior.INodeWorker) {
+func (r *RandomSequence) InitNodeWorker(worker bcore.INodeWorker) {
 	r.Sequence.InitNodeWorker(worker)
 	r.randomWorker = NewRandomWorker(r)
 }
@@ -32,6 +34,6 @@ func (r *RandomSequence) PropertiesClassProvider() any {
 //  @param originChildrenOrder
 //  @return orders
 //  @return needOrder
-func (r *RandomSequence) OnOrder(brain behavior.IBrain, originChildrenOrder []int) (orders []int, needOrder bool) {
+func (r *RandomSequence) OnOrder(brain bcore.IBrain, originChildrenOrder []int) (orders []int, needOrder bool) {
 	return r.randomWorker.OnOrder(brain, originChildrenOrder)
 }

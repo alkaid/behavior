@@ -4,6 +4,8 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/alkaid/behavior/bcore"
+
 	"github.com/alkaid/behavior/composite"
 
 	"github.com/alkaid/behavior/logger"
@@ -54,7 +56,7 @@ type InitialOption struct {
 	TimerNumSlots   int           // 时间槽数量 时间轮第一层总时长=interval*numSlots 为0则使用默认
 	LogLevel        zapcore.Level // 日志级别
 	LogDevelopment  bool          // 日志模式是否开发模式
-	CustomNodeClass []INode       // 用于注册自定义节点类
+	CustomNodeClass []bcore.INode // 用于注册自定义节点类
 }
 
 type Option func(option *InitialOption)
@@ -91,7 +93,7 @@ func WithLogDevelopment(development bool) Option {
 	}
 }
 
-func WithCustomNodes(nodes []INode) Option {
+func WithCustomNodes(nodes []bcore.INode) Option {
 	return func(o *InitialOption) {
 		o.CustomNodeClass = nodes
 	}

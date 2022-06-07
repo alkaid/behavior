@@ -1,6 +1,8 @@
 package composite
 
-import "github.com/alkaid/behavior"
+import (
+	"github.com/alkaid/behavior/bcore"
+)
 
 // RandomSelector 随机选择器.节点按从左到右的随机执行其子节点。当其中一个子节点执行成功时，选择器节点将停止执行。如果选择器的一个子节点成功运行，则选择器运行成功。如果选择器的所有子节点运行失败，则选择器运行失败。
 type RandomSelector struct {
@@ -12,7 +14,7 @@ type RandomSelector struct {
 //  @override Node.InitNodeWorker
 //  @receiver c
 //  @param worker
-func (r *RandomSelector) InitNodeWorker(worker behavior.INodeWorker) {
+func (r *RandomSelector) InitNodeWorker(worker bcore.INodeWorker) {
 	r.Selector.InitNodeWorker(worker)
 	r.randomWorker = NewRandomWorker(r)
 }
@@ -32,6 +34,6 @@ func (r *RandomSelector) PropertiesClassProvider() any {
 //  @param originChildrenOrder
 //  @return orders
 //  @return needOrder
-func (r *RandomSelector) OnOrder(brain behavior.IBrain, originChildrenOrder []int) (orders []int, needOrder bool) {
+func (r *RandomSelector) OnOrder(brain bcore.IBrain, originChildrenOrder []int) (orders []int, needOrder bool) {
 	return r.randomWorker.OnOrder(brain, originChildrenOrder)
 }

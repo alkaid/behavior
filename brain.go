@@ -3,6 +3,8 @@ package behavior
 import (
 	"reflect"
 
+	"github.com/alkaid/behavior/bcore"
+
 	"github.com/pkg/errors"
 
 	"github.com/alkaid/behavior/logger"
@@ -10,30 +12,14 @@ import (
 
 const DefaultDelegateName = "__default"
 
-// IBrain 大脑=行为树+记忆+委托对象集合. 也可以理解为上下文
-type IBrain interface {
-	// Tree() (*BehaviorTree, error)
-
-	// Blackboard 获取黑板
-	//  @return IBlackboard
-	Blackboard() IBlackboard
-	// Execute 执行委托方法
-	//  @param target 委托对象名
-	//  @param method 委托方法名
-	//  @param args 参数列表,注意若多个请加上...
-	//  @return []any
-	//  @return error
-	Execute(target string, method string, args ...any) ([]any, error)
-}
-
-var _ IBrain = (*Brain)(nil)
+var _ bcore.IBrain = (*Brain)(nil)
 
 type Brain struct {
-	blackboard IBlackboard
+	blackboard bcore.IBlackboard
 	delegates  map[string]*delegateMeta
 }
 
-func NewBrain(blackboard IBlackboard, delegates map[string]any) IBrain {
+func NewBrain(blackboard bcore.IBlackboard, delegates map[string]any) bcore.IBrain {
 	b := &Brain{
 		blackboard: blackboard,
 		delegates:  map[string]*delegateMeta{},
@@ -47,7 +33,7 @@ type delegateMeta struct {
 	reflectValue reflect.Value
 }
 
-func (b *Brain) Blackboard() IBlackboard {
+func (b *Brain) Blackboard() bcore.IBlackboard {
 	return b.blackboard
 }
 

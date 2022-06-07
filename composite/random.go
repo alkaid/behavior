@@ -1,7 +1,7 @@
 package composite
 
 import (
-	"github.com/alkaid/behavior"
+	"github.com/alkaid/behavior/bcore"
 	"github.com/alkaid/behavior/wrand"
 	"github.com/samber/lo"
 	"go.uber.org/zap"
@@ -12,7 +12,7 @@ type IRandomCompositeProperties interface {
 }
 
 type RandomCompositeProperties struct {
-	behavior.BaseProperties
+	bcore.BaseProperties
 	Weight []int `json:"weight"`
 }
 
@@ -22,10 +22,10 @@ func (r *RandomCompositeProperties) GetWeight() []int {
 
 // RandomWorker 组合节点随机排序的委托
 type RandomWorker struct {
-	node behavior.IComposite
+	node bcore.IComposite
 }
 
-func NewRandomWorker(node behavior.IComposite) *RandomWorker {
+func NewRandomWorker(node bcore.IComposite) *RandomWorker {
 	return &RandomWorker{node: node}
 }
 
@@ -46,7 +46,7 @@ func (r *RandomWorker) PropertiesClassProvider() any {
 //  @param originChildrenOrder
 //  @return orders
 //  @return needOrder
-func (r *RandomWorker) OnOrder(brain behavior.IBrain, originChildrenOrder []int) (orders []int, needOrder bool) {
+func (r *RandomWorker) OnOrder(brain bcore.IBrain, originChildrenOrder []int) (orders []int, needOrder bool) {
 	// 根据权重属性排序,若没有配置,则随机
 	weights := r.node.Properties().(IRandomCompositeProperties).GetWeight()
 	if len(weights) == 0 {
@@ -70,7 +70,8 @@ func (r *RandomWorker) OnOrder(brain behavior.IBrain, originChildrenOrder []int)
 		for i := 0; i < len(right); i++ {
 			right[i] = min
 		}
-		realWeights = append(weights, right...)
+		realWeights = weights
+		realWeights = append(realWeights, right...)
 	}
 	shuffled, err := wrand.ShuffleWithWeights(realWeights)
 	if err != nil {

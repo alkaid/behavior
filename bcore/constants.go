@@ -1,4 +1,4 @@
-package behavior
+package bcore
 
 const (
 	NodeStateInactive NodeState = iota // 非活跃
