@@ -35,15 +35,14 @@ type Observer func(op OpType, key string, oldValue any, newValue any)
 //  黑板为树形结构,实例化时可指定父黑板,将继承父黑板的KV.父黑板,一般来说是AI集群的共享黑板。想实现AI间通信时这将很有用.
 type Blackboard struct {
 	memoryMutex sync.Mutex
-	threadID    int                   // 监听函数执行的线程ID
-	treesMemory map[string]Memory     // 索引为行为树ID(rootID),元素为对应行为树的数据.仅允许框架内部CRUD
-	nodesData   map[string]*NodeData  // 索引为节点ID,元素为对应节点的数据(固定).仅允许框架内部CRUD
-	nodesMemory map[string]Memory     // 索引为节点ID,元素为对应节点的数据(扩展).仅允许框架内部CRUD
-	userMemory  Memory                // 作用域为<用户域>的数据.仅允许业务方CRUD
-	enable      bool                  // 是否开启
-	observers   map[string][]Observer // 监听列表
-	parent      *Blackboard           // 父黑板,一般来说是AI集群的共享黑板
-	children    []*Blackboard         // 子黑板
+	threadID    int                    // 监听函数执行的线程ID
+	treesMemory map[string]Memory      // 索引为行为树ID(rootID),元素为对应行为树的数据<行为树域>.仅允许框架内部CRUD
+	nodesData   map[string]*NodeMemory // 索引为节点ID,元素为对应节点的数据<节点域>.仅允许节点内部CRUD
+	userMemory  Memory                 // 作用域为<用户域>的数据.仅允许业务方CRUD
+	enable      bool                   // 是否开启
+	observers   map[string][]Observer  // 监听列表
+	parent      *Blackboard            // 父黑板,一般来说是AI集群的共享黑板
+	children    []*Blackboard          // 子黑板
 }
 
 func (b *Blackboard) ThreadID() int {
@@ -65,31 +64,26 @@ func (b *Blackboard) TreeMemory(rootID string) Memory {
 	return mem
 }
 
-// NodeMemory
-//  @implement IBlackboardInternal.NodeMemory
+// NodeExt
+//  @implement IBlackboardInternal.NodeExt
 //  @receiver b
 //  @param nodeID
 //  @return Memory
 //
-func (b *Blackboard) NodeMemory(nodeID string) Memory {
-	mem, ok := b.nodesMemory[nodeID]
-	if !ok {
-		mem = make(Memory)
-		b.treesMemory[nodeID] = mem
-	}
-	return mem
+func (b *Blackboard) NodeExt(nodeID string) Memory {
+	return b.NodeMemory(nodeID).Ext
 }
 
-// NodeData
-//  @implement IBlackboardInternal.NodeData
+// NodeMemory
+//  @implement IBlackboardInternal.NodeMemory
 //  @receiver b
 //  @param nodeID
-//  @return *NodeData
+//  @return *NodeMemory
 //
-func (b *Blackboard) NodeData(nodeID string) *NodeData {
+func (b *Blackboard) NodeMemory(nodeID string) *NodeMemory {
 	mem, ok := b.nodesData[nodeID]
 	if !ok {
-		mem = &NodeData{}
+		mem = NewNodeMemory()
 		b.nodesData[nodeID] = mem
 	}
 	return mem
@@ -106,8 +100,7 @@ func NewBlackboard(threadID int, parent *Blackboard) *Blackboard {
 	b := &Blackboard{
 		threadID:    threadID,
 		treesMemory: make(map[string]Memory),
-		nodesData:   make(map[string]*NodeData),
-		nodesMemory: make(map[string]Memory),
+		nodesData:   make(map[string]*NodeMemory),
 		userMemory:  make(Memory),
 		observers:   make(map[string][]Observer),
 		parent:      parent,
@@ -312,12 +305,12 @@ type IBlackboardInternal interface {
 	//  @param rootID
 	//  @return Memory
 	TreeMemory(rootID string) Memory
-	// NodeMemory 节点的数据(扩展)
+	// NodeExt 节点的数据(扩展)
 	//  @param nodeID
 	//  @return Memory
-	NodeMemory(nodeID string) Memory
-	// NodeData 节点的数据(固定)
+	NodeExt(nodeID string) Memory
+	// NodeMemory 节点的数据(固定)
 	//  @param nodeID
-	//  @return *NodeData
-	NodeData(nodeID string) *NodeData
+	//  @return *NodeMemory
+	NodeMemory(nodeID string) *NodeMemory
 }

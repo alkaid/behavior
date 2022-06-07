@@ -1,14 +1,18 @@
 package behavior
 
-import (
-	"encoding/json"
+// IObservingProperties 观察者装饰器属性
+type IObservingProperties interface {
+	GetAbortMode() AbortMode
+}
 
-	"github.com/alkaid/behavior/logger"
-	"go.uber.org/zap"
-)
-
+// ObservingProperties 观察者装饰器属性
 type ObservingProperties struct {
+	BaseProperties
 	AbortMode AbortMode `json:"abortMode"`
+}
+
+func (o *ObservingProperties) GetAbortMode() AbortMode {
+	return o.AbortMode
 }
 
 // ObservingDecorator 观察者装饰器,实现了对条件的监听,和条件变化时的各种中断模式
@@ -48,41 +52,24 @@ var _ IObservingWorker = (*ObservingDecorator)(nil)
 //  @receiver c
 //  @param worker
 func (o *ObservingDecorator) InitNodeWorker(worker INodeWorker) {
-	o.Node.InitNodeWorker(worker)
+	o.Decorator.InitNodeWorker(worker)
 	// 强转,由框架本身保证实例化时传进来的worker是自己(自己实现了IContainerWorker接口,故强转不会panic)
 	o.IObservingWorker = worker.(IObservingWorker)
-}
-
-// observing 是否监察中
-//  @receiver o
-//  @param brain
-//  @return bool
-func (o *ObservingDecorator) observing(brain IBrain) bool {
-	return brain.Blackboard().(IBlackboardInternal).NodeData(o.id).Observing
-}
-func (o *ObservingDecorator) setObserving(brain IBrain, observing bool) {
-	brain.Blackboard().(IBlackboardInternal).NodeData(o.id).Observing = observing
 }
 
 // AbortMode 中断模式
 //  @receiver o
 //  @return AbortMode
 func (o *ObservingDecorator) AbortMode() AbortMode {
-	return o.properties.(ObservingProperties).AbortMode
+	return o.properties.(IObservingProperties).GetAbortMode()
 }
 
-// OnParseProperties
-//  @override Node.OnParseProperties
-//  @receiver r
-//  @param properties
+// PropertiesClassProvider
+//  @implement INodeWorker.PropertiesClassProvider
+//  @receiver n
 //  @return any
-func (o *ObservingDecorator) OnParseProperties(properties json.RawMessage) any {
-	var prop ObservingProperties
-	err := json.Unmarshal(properties, &prop)
-	if err != nil {
-		logger.Log.Error("", zap.Error(err))
-	}
-	return prop
+func (o *ObservingDecorator) PropertiesClassProvider() any {
+	return &ObservingProperties{}
 }
 
 // OnStart
@@ -92,8 +79,8 @@ func (o *ObservingDecorator) OnParseProperties(properties json.RawMessage) any {
 func (o *ObservingDecorator) OnStart(brain IBrain) {
 	o.Decorator.OnStart(brain)
 	if o.AbortMode() != AbortModeNone {
-		if !o.observing(brain) {
-			o.setObserving(brain, true)
+		if !o.Memory(brain).Observing {
+			o.Memory(brain).Observing = true
 			o.IObservingWorker.StartObserving(brain)
 		}
 	}
@@ -113,7 +100,7 @@ func (o *ObservingDecorator) OnStart(brain IBrain) {
 func (o *ObservingDecorator) OnChildFinished(brain IBrain, child INode, succeeded bool) {
 	o.Decorator.OnChildFinished(brain, child, succeeded)
 	if o.IsInactive(brain) {
-		logger.Log.Fatal("ObservingDecorator cannot be inactive")
+		o.Log().Fatal("ObservingDecorator cannot be inactive")
 	}
 	abortMode := o.AbortMode()
 	if abortMode == AbortModeNone || abortMode == AbortModeSelf {
@@ -121,10 +108,10 @@ func (o *ObservingDecorator) OnChildFinished(brain IBrain, child INode, succeede
 	}
 }
 func (o *ObservingDecorator) stopObserving(brain IBrain) {
-	if !o.observing(brain) {
+	if !o.Memory(brain).Observing {
 		return
 	}
-	o.setObserving(brain, false)
+	o.Memory(brain).Observing = false
 	o.IObservingWorker.StopObserving(brain)
 }
 
@@ -170,7 +157,7 @@ func (o *ObservingDecorator) Evaluate(brain IBrain) {
 			parent = parent.Parent(brain)
 		}
 		if parent == nil {
-			logger.Log.Fatal("AbortMode is only valid when attached to a parent composite")
+			o.Log().Fatal("AbortMode is only valid when attached to a parent composite")
 		}
 		// TODO 平行节点是否要特殊限制
 		o.stopObserving(brain)
@@ -184,7 +171,7 @@ func (o *ObservingDecorator) Evaluate(brain IBrain) {
 //  @receiver o
 //  @param brain
 func (o *ObservingDecorator) StartObserving(brain IBrain) {
-	logger.Log.Debug(o.String(brain) + " StartObserving")
+	o.Log().Debug(o.String(brain) + " StartObserving")
 }
 
 // StopObserving
@@ -192,7 +179,7 @@ func (o *ObservingDecorator) StartObserving(brain IBrain) {
 //  @receiver o
 //  @param brain
 func (o *ObservingDecorator) StopObserving(brain IBrain) {
-	logger.Log.Debug(o.String(brain) + " StartObserving")
+	o.Log().Debug(o.String(brain) + " StartObserving")
 }
 
 // ConditionMet panic

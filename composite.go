@@ -1,15 +1,19 @@
 package behavior
 
-import "github.com/alkaid/behavior/logger"
+import (
+	"go.uber.org/zap"
+)
 
 // IComposite 复合节点
 type IComposite interface {
 	IContainer
 	AddChild(brain IBrain, child INode)
 	AddChildren(brain IBrain, children []INode)
+	Children() []INode
 	// AbortLowerPriorityChildrenForChild 中断低优先级分支
-	//  @param child 发起中断请求的子节点
-	AbortLowerPriorityChildrenForChild(brain IBrain, child INode)
+	//  子类必须覆写
+	//  @param childAbortBy 发起中断请求的子节点
+	AbortLowerPriorityChildrenForChild(brain IBrain, childAbortBy INode)
 }
 
 var _ IComposite = (*Composite)(nil)
@@ -21,9 +25,12 @@ type Composite struct {
 	children []INode
 }
 
+func (c *Composite) Children() []INode {
+	return c.children
+}
 func (c *Composite) AddChild(brain IBrain, child INode) {
 	if child.Parent(brain) != nil {
-		logger.Log.Fatal("child's parent is not nil")
+		c.Log().Fatal("child's parent is not nil", zap.String("child", child.String(brain)))
 	}
 	child.SetParent(brain, c)
 	c.children = append(c.children, child)
@@ -32,7 +39,7 @@ func (c *Composite) AddChild(brain IBrain, child INode) {
 func (c *Composite) AddChildren(brain IBrain, children []INode) {
 	for _, child := range children {
 		if child.Parent(brain) != nil {
-			logger.Log.Fatal("child's parent is not nil")
+			c.Log().Fatal("child's parent is not nil", zap.String("child", child.String(brain)))
 		}
 		child.SetParent(brain, c)
 	}
@@ -66,7 +73,7 @@ func (c *Composite) Finish(brain IBrain, succeeded bool) {
 
 // AbortLowerPriorityChildrenForChild panic实现不可继承,子类须自行实现 IComposite.AbortLowerPriorityChildrenForChild
 //  @receiver c
-//  @param child
-func (c *Composite) AbortLowerPriorityChildrenForChild(brain IBrain, child INode) {
+//  @param childAbortBy
+func (c *Composite) AbortLowerPriorityChildrenForChild(brain IBrain, childAbortBy INode) {
 	panic("implement me")
 }

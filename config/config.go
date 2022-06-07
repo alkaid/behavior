@@ -8,16 +8,16 @@ import (
 
 // NodeCfg 节点配置,也是默认解析器所能解析的格式
 type NodeCfg struct {
-	Id         string          `json:"id"`         // 唯一ID
+	ID         string          `json:"id"`         // 唯一ID
 	Name       string          `json:"name"`       // 节点名
 	Category   string          `json:"category"`   // 类型
 	Title      string          `json:"title"`      // 描述
-	Children   []NodeCfg       `json:"children"`   // 孩子节点
+	Children   []string        `json:"children"`   // 孩子节点
 	Properties json.RawMessage `json:"properties"` // 自定义属性,须由子类自行解析
 }
 
 func (n *NodeCfg) Valid() error {
-	if n.Id == "" {
+	if n.ID == "" {
 		return errors.New("id can't nil")
 	}
 	if n.Name == "" {
@@ -27,4 +27,10 @@ func (n *NodeCfg) Valid() error {
 		return errors.New("Category can't nil")
 	}
 	return nil
+}
+
+type DelegatorCfg struct {
+	ID     string `json:"id"`     // 节点ID
+	Target string `json:"target"` // 委托对象
+	Method string `json:"method"` // 委托方法
 }

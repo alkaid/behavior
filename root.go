@@ -1,16 +1,22 @@
 package behavior
 
 import (
-	"encoding/json"
-
 	"github.com/alkaid/behavior/thread"
 
-	"github.com/alkaid/behavior/logger"
 	"go.uber.org/zap"
 )
 
+type iRootProperties interface {
+	IsOnce() bool
+}
+
 type rootProperties struct {
+	BaseProperties
 	Once bool `json:"once"` // 是否仅运行一次,反之永远循环
+}
+
+func (r *rootProperties) IsOnce() bool {
+	return r.Once
 }
 
 type IRoot interface {
@@ -45,18 +51,12 @@ func (r *Root) IsSubTree(brain IBrain) bool {
 	return r.Parent(brain) != nil
 }
 
-// OnParseProperties
-//  @override Node.OnParseProperties
-//  @receiver r
-//  @param properties
+// PropertiesClassProvider
+//  @implement INodeWorker.PropertiesClassProvider
+//  @receiver n
 //  @return any
-func (r *Root) OnParseProperties(properties json.RawMessage) any {
-	var prop rootProperties
-	err := json.Unmarshal(properties, &prop)
-	if err != nil {
-		logger.Log.Error("", zap.Error(err))
-	}
-	return prop
+func (r *Root) PropertiesClassProvider() any {
+	return &rootProperties{}
 }
 
 // SetRoot
@@ -64,8 +64,8 @@ func (r *Root) OnParseProperties(properties json.RawMessage) any {
 //  @receiver n
 //  @param root
 func (r *Root) SetRoot(root IRoot) {
-	if root.Id() != r.Id() {
-		logger.Log.Fatal("root's root must be self", zap.String("selfID", r.Id()), zap.String("inID", root.Id()))
+	if root.ID() != r.ID() {
+		r.Log().Fatal("root's root must be self", zap.String("selfID", r.ID()), zap.String("inID", root.ID()))
 	}
 	r.Decorator.SetRoot(root)
 }
@@ -95,7 +95,7 @@ func (r *Root) OnAbort(brain IBrain) {
 		return
 	}
 	// TODO 这里是否有异步异常情况未考虑
-	logger.Log.Warn("can only abort active root")
+	r.Log().Warn("can only abort active root")
 }
 
 // OnChildFinished
@@ -107,7 +107,7 @@ func (r *Root) OnAbort(brain IBrain) {
 func (r *Root) OnChildFinished(brain IBrain, child INode, succeeded bool) {
 	r.Decorator.OnChildFinished(brain, child, succeeded)
 	// 如果是外部触发中断的,结束运行
-	if brain.Blackboard().(IBlackboardInternal).NodeData(r.id).State == NodeStateAborting {
+	if r.Memory(brain).State == NodeStateAborting {
 		// 非子树要关闭黑板监听
 		if !r.IsSubTree(brain) {
 			brain.Blackboard().(IBlackboardInternal).Stop()
@@ -119,7 +119,7 @@ func (r *Root) OnChildFinished(brain IBrain, child INode, succeeded bool) {
 		// 如果配置了一次性运行,同上
 		if r.IsSubTree(brain) {
 			r.Finish(brain, succeeded)
-		} else if r.properties.(rootProperties).Once {
+		} else if r.properties.(iRootProperties).IsOnce() {
 			// 若是主树且是一次性,结束root并关闭监听
 			brain.Blackboard().(IBlackboardInternal).Stop()
 			r.Finish(brain, succeeded)
@@ -138,7 +138,7 @@ func (r *Root) OnChildFinished(brain IBrain, child INode, succeeded bool) {
 //  @param brain
 func (r *Root) SafeAbortTree(brain IBrain) {
 	if r.IsSubTree(brain) {
-		logger.Log.Error("root is subtree,cannot abort", zap.String("id", r.id))
+		r.Log().Error("root is subtree,cannot abort", zap.String("id", r.id))
 		return
 	}
 	thread.GoByID(brain.Blackboard().(IBlackboardInternal).ThreadID(), func() {

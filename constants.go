@@ -25,6 +25,23 @@ const (
 	AbortModeBoth                           // 两种情况都中断: AbortModeSelf && AbortModeLowerPriority
 )
 
+// FinishMode 平行节点的完成模式
+type FinishMode int
+
+const (
+	FinishModeOne FinishMode = iota // 只要有一个子节点完成就完成
+	FinishModeAll                   // 全部子节点完成才完成
+)
+
+// EventType 行为树回调给委托的事件类型
+type EventType int
+
+const (
+	EventTypeOnStart  EventType = iota // 节点启动时
+	EventTypeOnUpdate                  // 节点更新时(瞬时节点无效)
+	EventTypeOnAbort                   // 节点被打断时(瞬时节点无效)
+)
+
 // 节点类别
 const (
 	CategoryComposite = "composite" // 组合节点

@@ -1,7 +1,10 @@
 package behavior
 
 import (
+	"math/rand"
 	"time"
+
+	"github.com/alkaid/behavior/composite"
 
 	"github.com/alkaid/behavior/logger"
 	"go.uber.org/zap/zapcore"
@@ -16,6 +19,7 @@ import (
 //  要使用该库必须先初始化
 //  @param option
 func InitSystem(opts ...Option) {
+	rand.Seed(time.Now().UnixNano())
 	option := &InitialOption{
 		ThreadPool:     nil,
 		TimerPoolSize:  1,
@@ -32,6 +36,11 @@ func InitSystem(opts ...Option) {
 	logger.Manager.SetDevelopment(option.LogDevelopment)
 	logger.Manager.SetLevel(option.LogLevel)
 	// TODO built in class register
+	GlobalClassLoader().Register(&composite.Sequence{})
+	GlobalClassLoader().Register(&composite.Selector{})
+	GlobalClassLoader().Register(&composite.RandomSequence{})
+	GlobalClassLoader().Register(&composite.RandomSelector{})
+	GlobalClassLoader().Register(&composite.Parallel{})
 	// 注册自定义节点
 	for _, class := range option.CustomNodeClass {
 		GlobalClassLoader().Register(class)

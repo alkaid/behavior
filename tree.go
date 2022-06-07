@@ -16,10 +16,10 @@ func NewNodeRegistry() *NodeRegistry {
 }
 
 func (n *NodeRegistry) Register(node INode) {
-	_, ok := n.registry[node.Id()]
+	_, ok := n.registry[node.ID()]
 	if ok {
-		logger.Log.Debug("node already registered", zap.String("node", node.Id()))
+		logger.Log.Debug("node already registered", zap.String("node", node.ID()))
 		return
 	}
-	n.registry[node.Id()] = node
+	n.registry[node.ID()] = node
 }

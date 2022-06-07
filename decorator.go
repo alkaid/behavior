@@ -6,6 +6,10 @@ type IDecorator interface {
 	// Decorate 装饰子节点
 	//  @param decorated
 	Decorate(decorated INode)
+	// Decorated 获取被装饰节点
+	//  @receiver d
+	//  @return INode
+	Decorated() INode
 }
 
 var _ IDecorator = (*Decorator)(nil)
@@ -23,6 +27,14 @@ type Decorator struct {
 //  @param decorated
 func (d *Decorator) Decorate(decorated INode) {
 	d.decorated = decorated
+}
+
+// Decorated
+//  @implement IDecorator.Decorated
+//  @receiver d
+//  @return INode
+func (d *Decorator) Decorated() INode {
+	return d.decorated
 }
 
 // SetRoot

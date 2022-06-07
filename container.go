@@ -1,9 +1,5 @@
 package behavior
 
-import (
-	"github.com/alkaid/behavior/logger"
-)
-
 // IContainer 容器:可以挂载子节点的节点
 type IContainer interface {
 	INode
@@ -51,7 +47,7 @@ func (c *Container) InitNodeWorker(worker INodeWorker) {
 //  @param child
 //  @param succeeded
 func (c *Container) OnChildFinished(brain IBrain, child INode, succeeded bool) {
-	logger.Log.Debug(c.String(brain) + " OnChildFinished")
+	c.Log().Debug(c.String(brain) + " OnChildFinished")
 }
 
 // ChildFinished
@@ -62,7 +58,7 @@ func (c *Container) OnChildFinished(brain IBrain, child INode, succeeded bool) {
 //  @param succeeded
 func (c *Container) ChildFinished(brain IBrain, child INode, succeeded bool) {
 	if c.IsInactive(brain) {
-		logger.Log.Fatal("A Child of a Container was stopped while the container was inactive!")
+		c.Log().Fatal("A Child of a Container was stopped while the container was inactive!")
 		return
 	}
 	c.IContainerWorker.OnChildFinished(brain, child, succeeded)
