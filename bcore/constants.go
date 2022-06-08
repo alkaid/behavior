@@ -1,5 +1,7 @@
 package bcore
 
+import "time"
+
 const (
 	NodeStateInactive NodeState = iota // 非活跃
 	NodeStateActive                    // 活跃
@@ -41,6 +43,8 @@ const (
 	EventTypeOnUpdate                  // 节点更新时(瞬时节点无效)
 	EventTypeOnAbort                   // 节点被打断时(瞬时节点无效)
 )
+
+const DefaultInterval = time.Millisecond * 30 // 行为树默认更新间隔
 
 // 节点类别
 const (

@@ -1,15 +1,11 @@
 package timer
 
 import (
-	"crypto/rand"
-	"math/big"
+	"math/rand"
 	"sync/atomic"
 	"time"
 
 	"github.com/alkaid/timingwheel"
-
-	"github.com/alkaid/behavior/logger"
-	"go.uber.org/zap"
 )
 
 // TimeWheelPool 时间轮池子
@@ -52,12 +48,7 @@ func (tp *TimeWheelPool) Get() *timingwheel.TimingWheel {
 //  @return *TimeWheel
 //
 func (tp *TimeWheelPool) GetRandom() *timingwheel.TimingWheel {
-	idx, err := rand.Int(rand.Reader, big.NewInt(tp.size))
-	if err != nil {
-		logger.Log.Error("", zap.Error(err))
-		idx = big.NewInt(0)
-	}
-	return tp.pool[idx.Int64()]
+	return tp.pool[rand.Intn(int(tp.size))]
 }
 
 // Start 启动

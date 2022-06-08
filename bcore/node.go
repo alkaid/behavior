@@ -2,6 +2,9 @@ package bcore
 
 import (
 	"encoding/json"
+	"time"
+
+	"github.com/samber/lo"
 
 	"github.com/alkaid/behavior/config"
 	"github.com/alkaid/behavior/logger"
@@ -29,15 +32,11 @@ type INode interface {
 	//  @return *NodeMemory
 	Memory(brain IBrain) *NodeMemory
 	ID() string
-	SetID(id string)
 	Title() string
-	SetTitle(title string)
 	Category() string
-	SetCategory(category string)
 	Properties() any
-	SetProperties(properties any)
 	Name() string
-	SetName(name string)
+	Delegator() config.DelegatorCfg
 	IsActive(brain IBrain) bool
 	IsInactive(brain IBrain) bool
 	IsAborting(brain IBrain) bool
@@ -119,13 +118,14 @@ var _ INodeWorker = (*Node)(nil)
 //  @implement INodeWorker
 type Node struct {
 	INodeWorker
-	parent     IContainer // 父节点
-	root       IRoot      // 当前子树的根节点
-	name       string     // 节点名
-	id         string     // 唯一ID
-	title      string     // 描述
-	category   string     // 类型
-	properties any        // 自定义属性
+	parent     IContainer          // 父节点
+	root       IRoot               // 当前子树的根节点
+	name       string              // 节点名
+	id         string              // 唯一ID
+	title      string              // 描述
+	category   string              // 类型
+	properties any                 // 自定义属性
+	delegator  config.DelegatorCfg // 委托
 }
 
 // Init
@@ -142,6 +142,12 @@ func (n *Node) Init(cfg *config.NodeCfg) {
 	n.title = cfg.Title
 	n.category = cfg.Category
 	n.properties = cfg.Properties
+	if cfg.Delegator.Method != "" {
+		n.delegator = config.DelegatorCfg{
+			Target: cfg.Delegator.Target,
+			Method: cfg.Delegator.Method,
+		}
+	}
 }
 
 // InitNodeWorker
@@ -175,44 +181,28 @@ func (n *Node) Memory(brain IBrain) *NodeMemory {
 	return brain.Blackboard().(IBlackboardInternal).NodeMemory(n.id)
 }
 
-func (n *Node) Name() string {
-	return n.name
+func (n *Node) Delegator() config.DelegatorCfg {
+	return n.delegator
 }
 
-func (n *Node) SetName(name string) {
-	n.name = name
+func (n *Node) Name() string {
+	return n.name
 }
 
 func (n *Node) ID() string {
 	return n.id
 }
 
-func (n *Node) SetID(id string) {
-	n.id = id
-}
-
 func (n *Node) Title() string {
 	return n.title
-}
-
-func (n *Node) SetTitle(title string) {
-	n.title = title
 }
 
 func (n *Node) Category() string {
 	return n.category
 }
 
-func (n *Node) SetCategory(category string) {
-	n.category = category
-}
-
 func (n *Node) Properties() any {
 	return n.properties
-}
-
-func (n *Node) SetProperties(properties any) {
-	n.properties = properties
 }
 
 func (n *Node) IsActive(brain IBrain) bool {
@@ -318,6 +308,28 @@ func (n *Node) Finish(brain IBrain, succeeded bool) {
 	if parent != nil {
 		parent.ChildFinished(brain, n, succeeded)
 	}
+}
+
+func (n *Node) Execute(brain IBrain, eventType EventType, delta time.Duration) Result {
+	return n.OnExecute(brain, eventType, delta)
+}
+
+func (n *Node) OnExecute(brain IBrain, eventType EventType, delta time.Duration) Result {
+	if n.delegator.Method == "" {
+		return ResultFailed
+	}
+	// 若当前节点没有delegator target,使用root的delegator target作为默认
+	target := lo.If(n.delegator.Target != "", n.delegator.Target).Else(n.root.Delegator().Target)
+	if target == "" {
+		return ResultFailed
+	}
+	// 交给委托执行
+	rets, err := brain.OnExecute(target, n.delegator.Method, eventType, delta)
+	if err != nil {
+		logger.Log.Error("", zap.Error(err))
+		return ResultFailed
+	}
+	return rets[0].(Result)
 }
 
 // CompositeAncestorFinished

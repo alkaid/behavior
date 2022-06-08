@@ -1,14 +1,10 @@
 package wrand
 
 import (
-	"crypto/rand"
 	"errors"
-	"math/big"
+	"math/rand"
 	"sort"
 
-	"go.uber.org/zap"
-
-	"github.com/alkaid/behavior/logger"
 	"github.com/samber/lo"
 )
 
@@ -111,12 +107,7 @@ var (
 //
 // Utilizes global rand as the source of randomness.
 func (c Chooser) Pick() (key any, item interface{}) {
-	r, err := rand.Int(rand.Reader, big.NewInt(int64(c.max)))
-	if err != nil {
-		logger.Log.Error("", zap.Error(err))
-		r = big.NewInt(0)
-	}
-	i := searchInts(c.totals, int(r.Int64()+1))
+	i := searchInts(c.totals, rand.Intn(c.max)+1)
 	return c.data[i].Key, c.data[i].Item
 }
 

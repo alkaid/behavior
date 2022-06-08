@@ -1,22 +1,31 @@
 package bcore
 
 import (
+	"time"
+
 	"github.com/alkaid/behavior/thread"
+	"github.com/samber/lo"
 
 	"go.uber.org/zap"
 )
 
 type iRootProperties interface {
 	IsOnce() bool
+	GetInterval() time.Duration
 }
 
+// rootProperties 根节点属性
 type rootProperties struct {
 	BaseProperties
-	Once bool `json:"once"` // 是否仅运行一次,反之永远循环
+	Once     bool          `json:"once"`     // 是否仅运行一次,反之永远循环
+	Interval time.Duration `json:"interval"` // 默认更新间隔
 }
 
 func (r *rootProperties) IsOnce() bool {
 	return r.Once
+}
+func (r *rootProperties) GetInterval() time.Duration {
+	return r.Interval
 }
 
 type IRoot interface {
@@ -25,6 +34,9 @@ type IRoot interface {
 	//  @param brain
 	//  @return bool
 	IsSubTree(brain IBrain) bool
+	// Interval 该树默认刷新间隔时间
+	//  @return time.Duration
+	Interval() time.Duration
 }
 
 var _ IRoot = (*Root)(nil)
@@ -49,6 +61,11 @@ func (r *Root) CanMounted() bool {
 func (r *Root) IsSubTree(brain IBrain) bool {
 	// 父节点不为空就是子树
 	return r.Parent(brain) != nil
+}
+
+func (r *Root) Interval() time.Duration {
+	interval := r.properties.(iRootProperties).GetInterval()
+	return lo.If(interval <= 0, DefaultInterval).Else(interval)
 }
 
 // PropertiesClassProvider

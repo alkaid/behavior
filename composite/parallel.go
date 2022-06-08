@@ -10,6 +10,7 @@ type IParallelProperties interface {
 	GetFailurePolicy() bcore.FinishMode
 }
 
+// ParallelProperties 平行节点属性
 type ParallelProperties struct {
 	bcore.BaseProperties
 	SuccessPolicy bcore.FinishMode `json:"successPolicy"` // 成功策略

@@ -17,10 +17,6 @@ type Handler struct {
 	Type    reflect.Type // low-level type of method
 	Methods map[string]*reflect.Method
 }
-type HandlerMethod struct {
-	Name   string
-	Method *reflect.Method // method stub
-}
 
 func NewHandler() *Handler {
 	return &Handler{
@@ -38,14 +34,56 @@ func NewHandlerPool() *HandlerPool {
 	}
 }
 
-// GetMethod 获取反射方法,首次获取会缓存
+// Register 注册代理类的反射信息
+//  @receiver h
+//  @param name
+//  @param target
+func (h *HandlerPool) Register(name string, target any) (err error) {
+	if target == nil {
+		err = errors.WithStack(fmt.Errorf("target is nil,name=%s", name))
+		return err
+	}
+	if name == "" {
+		name = reflect.TypeOf(target).Name()
+	}
+	handler := h.handlers[name]
+	if handler != nil {
+		logger.Log.Debug("target has already register", zap.String("type", name))
+		return nil
+	}
+	handler = &Handler{
+		Name:    name,
+		Type:    reflect.TypeOf(target),
+		Methods: map[string]*reflect.Method{},
+	}
+	methods := suitableHandlerMethods(handler.Type, func(s string) string {
+		// 首字母转小写
+		return strings.ToLower(s[:1]) + s[1:]
+	})
+	if len(methods) == 0 {
+		err = errors.WithStack(fmt.Errorf("target[%s] do not have delegate methods,make sure you implement the function sign: func(eventType bcore.EventType, delta time.Duration) bcore.Result", name))
+		return err
+	}
+	h.handlers[name] = handler
+	return nil
+}
+
+func (h *HandlerPool) getMethod(targetName string, methodName string) *reflect.Method {
+	handler := h.handlers[targetName]
+	if handler == nil {
+		return nil
+	}
+	return handler.Methods[methodName]
+}
+
+// SuitableGetMethod 获取反射方法,首次获取会缓存
 //  @receiver h
 //  @param receiverName
 //  @param receiver
 //  @param methodName
 //  @return method
 //  @return err
-func (h *HandlerPool) GetMethod(receiverName string, receiver any, methodName string) (method *reflect.Method, err error) {
+func (h *HandlerPool) SuitableGetMethod(receiverName string, receiver any, methodName string) (method *reflect.Method, err error) {
 	if receiver == nil {
 		err = errors.New("receiver is nil")
 		return
@@ -88,7 +126,7 @@ func (h *HandlerPool) GetMethod(receiverName string, receiver any, methodName st
 	return method, err
 }
 
-// ProcessHandlerMessage handle方法发射调用
+// ProcessHandlerMessage handle方法反射调用
 //  @receiver h
 //  @param receiverName 缓存中注册的名字
 //  @param receiverInstance receiver的实例
@@ -98,9 +136,9 @@ func (h *HandlerPool) GetMethod(receiverName string, receiver any, methodName st
 //  @return rets
 //  @return error
 func (h *HandlerPool) ProcessHandlerMessage(receiverName string, receiverInstance any, receiver reflect.Value, methodName string, args ...any) (rets []any, err error) {
-	method, err := h.GetMethod(receiverName, receiverInstance, methodName)
-	if err != nil {
-		return nil, err
+	method := h.getMethod(receiverName, methodName)
+	if method == nil {
+		return nil, errors.New("method not found")
 	}
 	pargs := []reflect.Value{receiver}
 	for _, arg := range args {

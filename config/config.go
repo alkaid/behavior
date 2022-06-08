@@ -14,6 +14,7 @@ type NodeCfg struct {
 	Title      string          `json:"title"`      // 描述
 	Children   []string        `json:"children"`   // 孩子节点
 	Properties json.RawMessage `json:"properties"` // 自定义属性,须由子类自行解析
+	Delegator  DelegatorCfg    `json:"delegator"`  // 委托配置
 }
 
 func (n *NodeCfg) Valid() error {
@@ -29,8 +30,8 @@ func (n *NodeCfg) Valid() error {
 	return nil
 }
 
+// DelegatorCfg 委托配置
 type DelegatorCfg struct {
-	ID     string `json:"id"`     // 节点ID
-	Target string `json:"target"` // 委托对象
+	Target string `json:"target"` // 委托对象,可以为空,为空则使用root的委托对象
 	Method string `json:"method"` // 委托方法
 }
