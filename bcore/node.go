@@ -37,6 +37,9 @@ type INode interface {
 	Properties() any
 	Name() string
 	Delegator() config.DelegatorCfg
+	// HasDelegator 是否存在委托方法
+	//  @return bool
+	HasDelegator() bool
 	IsActive(brain IBrain) bool
 	IsInactive(brain IBrain) bool
 	IsAborting(brain IBrain) bool
@@ -183,6 +186,10 @@ func (n *Node) Memory(brain IBrain) *NodeMemory {
 
 func (n *Node) Delegator() config.DelegatorCfg {
 	return n.delegator
+}
+
+func (n *Node) HasDelegator() bool {
+	return n.delegator.Method != ""
 }
 
 func (n *Node) Name() string {

@@ -2,6 +2,8 @@ package bcore
 
 import "time"
 
+const DefaultInterval = time.Millisecond * 30 // 行为树默认更新间隔
+
 const (
 	NodeStateInactive NodeState = iota // 非活跃
 	NodeStateActive                    // 活跃
@@ -44,7 +46,19 @@ const (
 	EventTypeOnAbort                   // 节点被打断时(瞬时节点无效)
 )
 
-const DefaultInterval = time.Millisecond * 30 // 行为树默认更新间隔
+// Operator 运算符
+type Operator int
+
+const (
+	OperatorIsSet      Operator = iota // 是否设存在KEY
+	OperatorIsNotSet                   // 是否不存在key
+	OperatorIsEqual                    // 是否相等
+	OperatorIsNotEqual                 // 是否不等
+	OperatorIsGt                       // 是否大于
+	OperatorIsGte                      // 是否大于等于
+	OperatorIsLt                       // 是否小于
+	OperatorIsLte                      // 是否小于等于
+)
 
 // 节点类别
 const (

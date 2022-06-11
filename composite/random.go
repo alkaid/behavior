@@ -13,7 +13,6 @@ type IRandomCompositeProperties interface {
 
 // RandomCompositeProperties 随机组合节点属性
 type RandomCompositeProperties struct {
-	bcore.BaseProperties
 	Weight []int `json:"weight"`
 }
 

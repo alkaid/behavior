@@ -2,6 +2,7 @@ package bcore
 
 import (
 	"errors"
+	"time"
 
 	"github.com/alkaid/timingwheel"
 
@@ -45,14 +46,24 @@ func MapValue[T any](m Memory, key string) (T, bool) {
 
 // NodeMemory 节点数据
 type NodeMemory struct {
-	Ext           Memory             // 扩展数据,给框架之外的自定义节点使用
-	State         NodeState          // 节点状态
-	MountParent   IContainer         // 父节点,仅 Root 有效
-	Observing     bool               // 是否监听中,仅 ObservingDecorator 及其派生类有效
-	CurrentChild  int                // 当前运行中的子节点索引,若组合节点支持子节点随机,则该字段的意义为组合节点当前step index
-	ChildrenOrder []int              // 孩子节点排序索引
-	Parallel      *ParallelMemory    // 并发节点的数据
-	CronTask      *timingwheel.Timer // 定时任务
+	Ext         Memory     // 扩展数据,给框架之外的自定义节点使用
+	State       NodeState  // 节点状态
+	MountParent IContainer // 父节点,仅 Root 有效
+	Observing   bool       // 是否监听中,仅 ObservingDecorator 及其派生类有效
+	// 根据节点类型意义不同:
+	//  1.非随机组合节点:当前运行中的子节点索引;
+	//  2.随机组合节点:完成了几个子节点;
+	//  3.循环装饰器:当前为第几次循环
+	CurrIndex        int
+	ChildrenOrder    []int              // 孩子节点排序索引
+	Parallel         *ParallelMemory    // 并发节点的数据
+	CronTask         *timingwheel.Timer // 定时任务
+	DefaultObserver  Observer           // 默认监听函数
+	Cooling          bool               // 是否cd中
+	LimitReached     bool               // 是否达到限制
+	DecoratedDone    bool               // 被装饰节点是否完成
+	DecoratedSuccess bool               // 被装饰节点是否成功
+	Elapsed          time.Duration      // 启动后流逝的时间
 }
 
 func NewNodeMemory() *NodeMemory {

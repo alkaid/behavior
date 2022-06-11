@@ -12,7 +12,6 @@ type IParallelProperties interface {
 
 // ParallelProperties 平行节点属性
 type ParallelProperties struct {
-	bcore.BaseProperties
 	SuccessPolicy bcore.FinishMode `json:"successPolicy"` // 成功策略
 	FailurePolicy bcore.FinishMode `json:"failurePolicy"` // 失败策略
 }

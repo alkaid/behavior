@@ -7,7 +7,6 @@ type IObservingProperties interface {
 
 // ObservingProperties 观察者装饰器属性
 type ObservingProperties struct {
-	BaseProperties
 	AbortMode AbortMode `json:"abortMode"`
 }
 
@@ -41,8 +40,9 @@ type IObservingWorker interface {
 	StopObserving(brain IBrain)
 	// ConditionMet 计算条件是否满足
 	//  @param brain
+	//  @param args... 透传参数,由 ObservingDecorator.Evaluate 传递过来
 	//  @return bool
-	ConditionMet(brain IBrain) bool
+	ConditionMet(brain IBrain, args ...any) bool
 }
 
 var _ IObservingWorker = (*ObservingDecorator)(nil)
@@ -106,6 +106,7 @@ func (o *ObservingDecorator) OnChildFinished(brain IBrain, child INode, succeede
 	if abortMode == AbortModeNone || abortMode == AbortModeSelf {
 		o.stopObserving(brain)
 	}
+	o.Finish(brain, succeeded)
 }
 func (o *ObservingDecorator) stopObserving(brain IBrain) {
 	if !o.Memory(brain).Observing {
@@ -129,8 +130,9 @@ func (o *ObservingDecorator) OnCompositeAncestorFinished(brain IBrain, composite
 // Evaluate 根据节点状态和条件满足来评估后续中断流程
 //  @receiver o
 //  @param brain
-func (o *ObservingDecorator) Evaluate(brain IBrain) {
-	conditionMet := o.IObservingWorker.ConditionMet(brain)
+//  @param args... 透传参数,原样传递给 ConditionMet
+func (o *ObservingDecorator) Evaluate(brain IBrain, args ...any) {
+	conditionMet := o.IObservingWorker.ConditionMet(brain, args...)
 	mode := o.AbortMode()
 	// 当条件变为不满足时,根据mode中断自己
 	if o.IsActive(brain) && !conditionMet {
@@ -183,10 +185,10 @@ func (o *ObservingDecorator) StopObserving(brain IBrain) {
 }
 
 // ConditionMet panic
-//  @implement IObservingWorker.ConditionMet
 //  @receiver o
 //  @param brain
+//  @param args
 //  @return bool
-func (o *ObservingDecorator) ConditionMet(brain IBrain) bool {
+func (o *ObservingDecorator) ConditionMet(brain IBrain, args ...any) bool {
 	return false
 }

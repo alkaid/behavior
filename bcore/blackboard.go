@@ -3,6 +3,9 @@ package bcore
 import (
 	stderr "errors"
 	"sync"
+	"time"
+
+	"go.uber.org/zap"
 
 	"github.com/alkaid/behavior/logger"
 
@@ -139,14 +142,31 @@ func (b *Blackboard) Stop() {
 	}
 }
 
-// AddOrRmObserver
-//  @implement IBlackboardInternal.AddOrRmObserver
+// AddObserver
+//  @implement IBlackboardInternal.AddObserver
+//  @receiver b
+//  @param key
+//  @param observer
+func (b *Blackboard) AddObserver(key string, observer Observer) {
+	b.addOrRmObserver(true, key, observer)
+}
+
+// RemoveObserver
+//  @implement IBlackboardInternal.RemoveObserver
+//  @receiver b
+//  @param key
+//  @param observer
+func (b *Blackboard) RemoveObserver(key string, observer Observer) {
+	b.addOrRmObserver(false, key, observer)
+}
+
+// addOrRmObserver
 //  @receiver b
 //  @param add
 //  @param key
 //  @param observer
 //
-func (b *Blackboard) AddOrRmObserver(add bool, key string, observer Observer) {
+func (b *Blackboard) addOrRmObserver(add bool, key string, observer Observer) {
 	// 无论调用方是否在AI线程里,都兜底派发到AI线程,避免和监听函数并行
 	thread.GoByID(b.threadID, func() {
 		observers, ok := b.observers[key]
@@ -211,6 +231,31 @@ func (b *Blackboard) Get(key string) (any, bool) {
 	return val, ok
 }
 
+// GetDuration
+//  @implement IBlackboard.GetDuration
+//  @receiver b
+//  @param key
+//  @return time.Duration
+//  @return bool
+func (b *Blackboard) GetDuration(key string) (time.Duration, bool) {
+	val, ok := b.Get(key)
+	switch v := val.(type) {
+	case time.Duration:
+		return v, ok
+	case int64:
+		return time.Duration(v), ok
+	case string:
+		tm, err := time.ParseDuration(v)
+		if err != nil {
+			logger.Log.Error("convert duration error", zap.Error(err), zap.String("key", key), zap.Any("value", val))
+			return tm, false
+		}
+		return tm, true
+	}
+	logger.Log.Error("convert duration error,unsupport type", zap.String("key", key), zap.Any("value", val))
+	return 0, false
+}
+
 // Set
 //  @implement IBlackboard.Set
 //  @receiver b
@@ -264,6 +309,12 @@ type IBlackboard interface {
 	//  @return any
 	//  @return bool
 	Get(key string) (any, bool)
+	// GetDuration 获取 time.Duration 类型的值,支持 int64 | string | time.Duration. string 格式参考 time.ParseDuration
+	//  @receiver b
+	//  @param key
+	//  @return time.Duration
+	//  @return bool
+	GetDuration(key string) (time.Duration, bool)
 	// Set 设置KV(用户域)
 	//  线程安全
 	//  @receiver b
@@ -294,13 +345,8 @@ type IBlackboardInternal interface {
 	//  非线程安全
 	//  @receiver b
 	Stop()
-	// AddOrRmObserver 添加或删除监听(异步)
-	//  私有,框架内部使用
-	//  @receiver b
-	//  @param add 是否添加
-	//  @param key 黑板上的key
-	//  @param observer 监听
-	AddOrRmObserver(add bool, key string, observer Observer)
+	AddObserver(key string, observer Observer)
+	RemoveObserver(key string, observer Observer)
 	// TreeMemory 树数据
 	//  @param rootID
 	//  @return Memory

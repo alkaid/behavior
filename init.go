@@ -4,6 +4,8 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/alkaid/behavior/decorator"
+
 	"github.com/alkaid/behavior/bcore"
 
 	"github.com/alkaid/behavior/composite"
@@ -43,6 +45,7 @@ func InitSystem(opts ...Option) {
 	GlobalClassLoader().Register(&composite.RandomSequence{})
 	GlobalClassLoader().Register(&composite.RandomSelector{})
 	GlobalClassLoader().Register(&composite.Parallel{})
+	GlobalClassLoader().Register(&decorator.Service{})
 	// 注册自定义节点
 	for _, class := range option.CustomNodeClass {
 		GlobalClassLoader().Register(class)

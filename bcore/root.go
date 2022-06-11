@@ -142,7 +142,7 @@ func (r *Root) OnChildFinished(brain IBrain, child INode, succeeded bool) {
 			r.Finish(brain, succeeded)
 		} else {
 			// 若是主树且可以循环，开启下一轮
-			// 不能直接 Start(),会堆栈溢出,应该重新异步派发
+			// 不能直接 Start(),会堆栈溢出且阻塞其他分支,应该重新异步派发
 			thread.GoByID(brain.Blackboard().(IBlackboardInternal).ThreadID(), func() {
 				r.decorated.Start(brain)
 			})

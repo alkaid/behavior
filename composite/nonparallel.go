@@ -35,10 +35,10 @@ type IChildrenOrder interface {
 //  @param brain
 //  @return int
 func (n *NonParallel) CurrIdx(brain bcore.IBrain) int {
-	return brain.Blackboard().(bcore.IBlackboardInternal).NodeMemory(n.ID()).CurrentChild
+	return brain.Blackboard().(bcore.IBlackboardInternal).NodeMemory(n.ID()).CurrIndex
 }
 func (n *NonParallel) SetCurrIdx(brain bcore.IBrain, currChild int) {
-	brain.Blackboard().(bcore.IBlackboardInternal).NodeMemory(n.ID()).CurrentChild = currChild
+	brain.Blackboard().(bcore.IBlackboardInternal).NodeMemory(n.ID()).CurrIndex = currChild
 }
 
 // CurrChildIdx 当前处理的子节点index
@@ -49,10 +49,10 @@ func (n *NonParallel) CurrChildIdx(brain bcore.IBrain) int {
 	nodeData := brain.Blackboard().(bcore.IBlackboardInternal).NodeMemory(n.ID())
 	// 无需重新排序的节点,使用单例里的索引
 	if !n.needOrder {
-		return nodeData.CurrentChild
+		return nodeData.CurrIndex
 	}
 	// 使用保存到黑板的排序
-	return nodeData.ChildrenOrder[nodeData.CurrentChild]
+	return nodeData.ChildrenOrder[nodeData.CurrIndex]
 }
 
 // CurrChild 当前处理的子节点
@@ -112,6 +112,7 @@ func (n *NonParallel) OnStart(brain bcore.IBrain) {
 //  @receiver n
 //  @param brain
 func (n *NonParallel) OnAbort(brain bcore.IBrain) {
+	n.Composite.OnAbort(brain)
 	// 向下传播给当前活跃子节点
 	n.CurrChild(brain).Abort(brain)
 }

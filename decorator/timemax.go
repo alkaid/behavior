@@ -1,0 +1,117 @@
+package decorator
+
+import (
+	"time"
+
+	"github.com/alkaid/behavior/timer"
+	"github.com/alkaid/timingwheel"
+
+	"github.com/alkaid/behavior/bcore"
+)
+
+type ITimeMaxProperties interface {
+	GetLimit() time.Duration
+	GetRandomDeviation() time.Duration
+	GetWaitForChildButFail() bool
+}
+
+// TimeMaxProperties 最大时限装饰器属性
+type TimeMaxProperties struct {
+	Limit               time.Duration `json:"Limit"`               // 最大时限
+	RandomDeviation     time.Duration `json:"randomDeviation"`     // 随机偏差:将一个随机范围数值添加至服务节点的 冷却时间（cooldownTime） 值。
+	WaitForChildButFail bool          `json:"waitForChildButFail"` // true:超时后依然等待子节点完成,但将修改结果为失败 false:超时后立即关闭子节点
+}
+
+func (t TimeMaxProperties) GetLimit() time.Duration {
+	return t.Limit
+}
+
+func (t TimeMaxProperties) GetRandomDeviation() time.Duration {
+	return t.RandomDeviation
+}
+func (t TimeMaxProperties) GetWaitForChildButFail() bool {
+	return t.WaitForChildButFail
+}
+
+// TimeMax 最大时限装饰器
+//  限制最大时限内必须返回结果
+type TimeMax struct {
+	bcore.Decorator
+}
+
+// PropertiesClassProvider
+//  @implement INodeWorker.PropertiesClassProvider
+//  @receiver n
+//  @return any
+func (m *TimeMax) PropertiesClassProvider() any {
+	return &TimeMaxProperties{}
+}
+func (m *TimeMax) TimeMaxProperties() ITimeMaxProperties {
+	return m.Properties().(ITimeMaxProperties)
+}
+
+// OnStart
+//  @override Node.OnStart
+//  @receiver n
+//  @param brain
+func (m *TimeMax) OnStart(brain bcore.IBrain) {
+	m.Decorator.OnStart(brain)
+	m.Memory(brain).LimitReached = false
+	m.startTimer(brain)
+	m.Decorated().Start(brain)
+}
+
+// OnAbort
+//  @override Node.OnAbort
+//  @receiver n
+//  @param brain
+func (m *TimeMax) OnAbort(brain bcore.IBrain) {
+	m.Decorator.OnAbort(brain)
+	m.stopTimer(brain)
+	if m.Decorated().IsActive(brain) {
+		m.Decorated().Abort(brain)
+	} else {
+		m.Finish(brain, false)
+	}
+}
+
+// OnChildFinished
+//  @override bcore.Decorator .OnChildFinished
+//  @receiver s
+//  @param brain
+//  @param child
+//  @param succeeded
+func (m *TimeMax) OnChildFinished(brain bcore.IBrain, child bcore.INode, succeeded bool) {
+	m.Decorator.OnChildFinished(brain, child, succeeded)
+	m.stopTimer(brain)
+	if m.Memory(brain).LimitReached {
+		m.Finish(brain, false)
+	} else {
+		m.Finish(brain, succeeded)
+	}
+}
+
+func (b *TimeMax) getTaskFun(brain bcore.IBrain) func() {
+	return func() {
+		if !b.TimeMaxProperties().GetWaitForChildButFail() {
+			b.Decorated().Abort(brain)
+		} else {
+			b.Memory(brain).LimitReached = true
+			if !b.Decorated().IsActive(brain) {
+				b.Log().Fatal("decorated must be active")
+			}
+		}
+	}
+}
+func (b *TimeMax) startTimer(brain bcore.IBrain) {
+	b.Memory(brain).CronTask = timer.After(b.TimeMaxProperties().GetLimit(),
+		b.TimeMaxProperties().GetRandomDeviation(),
+		b.getTaskFun(brain),
+		timingwheel.WithGoID(brain.Blackboard().(bcore.IBlackboardInternal).ThreadID()))
+}
+func (b *TimeMax) stopTimer(brain bcore.IBrain) {
+	if b.Memory(brain).CronTask != nil {
+		b.Memory(brain).CronTask.Stop()
+		b.Memory(brain).CronTask = nil
+	}
+}

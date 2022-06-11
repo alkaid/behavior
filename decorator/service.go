@@ -1,8 +1,9 @@
 package decorator
 
 import (
-	"math/rand"
 	"time"
+
+	"github.com/alkaid/timingwheel"
 
 	"github.com/alkaid/behavior/timer"
 
@@ -16,7 +17,6 @@ type IServiceProperties interface {
 
 // ServiceProperties 服务节点属性
 type ServiceProperties struct {
-	bcore.BaseProperties
 	Interval        time.Duration `json:"interval"`        // 执行间隔，配0则为行为树默认时间轮间隔
 	RandomDeviation time.Duration `json:"randomDeviation"` // 随机偏差:将一个随机范围数值添加至服务节点的 时间间隔（Interval） 值。
 }
@@ -44,8 +44,6 @@ func (s *Service) PropertiesClassProvider() any {
 	return &ServiceProperties{}
 }
 
-const minRandomDeviationRate = 0.5
-
 // OnStart
 //  @override bcore.Decorator .OnStart
 //  @receiver s
@@ -57,16 +55,15 @@ func (s *Service) OnStart(brain bcore.IBrain) {
 	if interval <= 0 {
 		interval = s.Root().Interval()
 	}
-	r := rand.Float32()
-	interval = interval - time.Duration(minRandomDeviationRate*float32(randomDeviation)) + time.Duration(r*float32(randomDeviation))
 	lastTime := time.Now()
-	task := timer.TimeWheelInstance().Cron(interval, func() {
+	s.stopTimer(brain)
+	// 默认投递到黑板保存的线程ID
+	s.Memory(brain).CronTask = timer.Cron(interval, randomDeviation, func() {
 		currTime := time.Now()
 		delta := currTime.Sub(lastTime)
 		s.Execute(brain, bcore.EventTypeOnStart, delta)
 		lastTime = currTime
-	})
-	s.Memory(brain).CronTask = task
+	}, timingwheel.WithGoID(brain.Blackboard().(bcore.IBlackboardInternal).ThreadID()))
 	s.Execute(brain, bcore.EventTypeOnStart, 0)
 	s.Decorated().Start(brain)
 }
@@ -79,10 +76,13 @@ func (s *Service) OnStart(brain bcore.IBrain) {
 //  @param succeeded
 func (s *Service) OnChildFinished(brain bcore.IBrain, child bcore.INode, succeeded bool) {
 	s.Decorator.OnChildFinished(brain, child, succeeded)
-	memory := s.Memory(brain)
-	if memory.CronTask != nil {
-		memory.CronTask.Stop()
-		memory.CronTask = nil
-	}
+	s.stopTimer(brain)
 	s.Finish(brain, succeeded)
+}
+
+func (s *Service) stopTimer(brain bcore.IBrain) {
+	if s.Memory(brain).CronTask != nil {
+		s.Memory(brain).CronTask.Stop()
+		s.Memory(brain).CronTask = nil
+	}
 }
