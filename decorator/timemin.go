@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/alkaid/behavior/timer"
+	"github.com/alkaid/behavior/util"
 	"github.com/alkaid/timingwheel"
 
 	"github.com/alkaid/behavior/bcore"
@@ -17,17 +18,17 @@ type ITimeMinProperties interface {
 
 // TimeMinProperties 最小时限装饰器属性
 type TimeMinProperties struct {
-	Limit                time.Duration `json:"Limit"`                // 最小时限
-	RandomDeviation      time.Duration `json:"randomDeviation"`      // 随机偏差:将一个随机范围数值添加至服务节点的 冷却时间（cooldownTime） 值。
+	Limit                util.Duration `json:"Limit"`                // 最小时限
+	RandomDeviation      util.Duration `json:"randomDeviation"`      // 随机偏差:将一个随机范围数值添加至服务节点的 冷却时间（cooldownTime） 值。
 	FinishOnChildFailure bool          `json:"finishOnChildFailure"` // true:子节点返回false时，当前节点会立即停用并返回false false:子节点返回时，当前节点会等到直到达到时间限制后才停用
 }
 
 func (t TimeMinProperties) GetLimit() time.Duration {
-	return t.Limit
+	return t.Limit.Duration
 }
 
 func (t TimeMinProperties) GetRandomDeviation() time.Duration {
-	return t.RandomDeviation
+	return t.RandomDeviation.Duration
 }
 func (t TimeMinProperties) GetFinishOnChildFailure() bool {
 	return t.FinishOnChildFailure
@@ -60,7 +61,7 @@ func (m *TimeMin) OnStart(brain bcore.IBrain) {
 	m.Memory(brain).DecoratedDone = false
 	m.Memory(brain).DecoratedSuccess = false
 	m.startTimer(brain)
-	m.Decorated().Start(brain)
+	m.Decorated(brain).Start(brain)
 }
 
 // OnAbort
@@ -70,9 +71,9 @@ func (m *TimeMin) OnStart(brain bcore.IBrain) {
 func (m *TimeMin) OnAbort(brain bcore.IBrain) {
 	m.Decorator.OnAbort(brain)
 	m.stopTimer(brain)
-	if m.Decorated().IsActive(brain) {
+	if m.Decorated(brain).IsActive(brain) {
 		m.Memory(brain).LimitReached = true
-		m.Decorated().Abort(brain)
+		m.Decorated(brain).Abort(brain)
 	} else {
 		m.Finish(brain, false)
 	}
@@ -105,7 +106,7 @@ func (b *TimeMin) getTaskFun(brain bcore.IBrain) func() {
 			b.Finish(brain, b.Memory(brain).DecoratedSuccess)
 			return
 		}
-		if !b.Decorated().IsActive(brain) {
+		if !b.Decorated(brain).IsActive(brain) {
 			b.Log().Fatal("decorated must be active")
 		}
 	}

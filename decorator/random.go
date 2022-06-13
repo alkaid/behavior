@@ -46,7 +46,7 @@ func (r *Random) PropertiesClassProvider() any {
 func (r *Random) OnStart(brain bcore.IBrain) {
 	r.Decorator.OnStart(brain)
 	if rand.Float64() <= r.Properties().(IRandomProperties).GetProbability() {
-		r.Decorated().Start(brain)
+		r.Decorated(brain).Start(brain)
 	} else {
 		r.Finish(brain, false)
 	}
@@ -58,7 +58,7 @@ func (r *Random) OnStart(brain bcore.IBrain) {
 //  @param brain
 func (r *Random) OnAbort(brain bcore.IBrain) {
 	r.Decorator.OnAbort(brain)
-	r.Decorated().Abort(brain)
+	r.Decorated(brain).Abort(brain)
 }
 
 // OnChildFinished

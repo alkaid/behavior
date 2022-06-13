@@ -51,10 +51,10 @@ func (r *Repeater) OnStart(brain bcore.IBrain) {
 //  @param brain
 func (r *Repeater) OnAbort(brain bcore.IBrain) {
 	r.Decorator.OnAbort(brain)
-	if r.Decorated().IsActive(brain) {
-		r.Decorated().Abort(brain)
+	if r.Decorated(brain).IsActive(brain) {
+		r.Decorated(brain).Abort(brain)
 	} else {
-		r.Decorated().Finish(brain, false)
+		r.Decorated(brain).Finish(brain, false)
 	}
 }
 
@@ -77,6 +77,6 @@ func (r *Repeater) OnChildFinished(brain bcore.IBrain, child bcore.INode, succee
 	}
 	// 不能直接 Finish(),会堆栈溢出且阻塞其他分支,应该重新异步派发
 	thread.GoByID(brain.Blackboard().(bcore.IBlackboardInternal).ThreadID(), func() {
-		r.Decorated().Start(brain)
+		r.Decorated(brain).Start(brain)
 	})
 }

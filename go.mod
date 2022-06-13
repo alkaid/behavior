@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/alkaid/timingwheel v1.0.2
 	github.com/antonmedv/expr v1.9.0
+	github.com/disiqueira/gotree v1.0.0
 	github.com/google/go-cmp v0.5.8
 	github.com/matoous/go-nanoid v1.5.0
 	github.com/panjf2000/ants/v2 v2.4.8

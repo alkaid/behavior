@@ -34,4 +34,24 @@ func (n *NodeCfg) Valid() error {
 type DelegatorCfg struct {
 	Target string `json:"target"` // 委托对象,可以为空,为空则使用root的委托对象
 	Method string `json:"method"` // 委托方法
+	Script string `json:"script"` // 委托脚本
+}
+
+// TreeCfg 树配置
+type TreeCfg struct {
+	Nodes       map[string]*NodeCfg `json:"nodes"`       // 所有节点
+	Ver         string              `json:"ver"`         // 数据版本
+	Root        string              `json:"root"`        // 根节点nanoID
+	Tag         string              `json:"tag"`         // 行为树标志,必须能简要描述业务逻辑且全局唯一
+	Description string              `json:"description"` // 业务逻辑详细描述
+}
+
+func (c *TreeCfg) Valid() error {
+	if c.Root == "" {
+		return errors.New("root cannot be nil")
+	}
+	if len(c.Nodes) == 0 {
+		return errors.New("nodes length is zero")
+	}
+	return nil
 }

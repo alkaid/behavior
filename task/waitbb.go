@@ -1,7 +1,9 @@
-package decorator
+package task
 
 import (
 	"time"
+
+	"github.com/alkaid/behavior/util"
 
 	"go.uber.org/zap"
 
@@ -19,7 +21,7 @@ type IWaitBBProperties interface {
 // WaitBBProperties 等待黑板时间属性
 type WaitBBProperties struct {
 	Key             string        `json:"key"`             // 引用的黑板键，确定等待时间
-	RandomDeviation time.Duration `json:"randomDeviation"` // 随机偏差:允许向 等待时间（WaitBB Time） 属性添加随机时间（正或负）
+	RandomDeviation util.Duration `json:"randomDeviation"` // 随机偏差:允许向 等待时间（WaitBB Time） 属性添加随机时间（正或负）
 }
 
 func (w *WaitBBProperties) GetKey() string {
@@ -27,7 +29,7 @@ func (w *WaitBBProperties) GetKey() string {
 }
 
 func (w *WaitBBProperties) GetRandomDeviation() time.Duration {
-	return w.RandomDeviation
+	return w.RandomDeviation.Duration
 }
 
 // WaitBB 等待黑板时间

@@ -16,7 +16,7 @@ type SimpleDecorator struct {
 //  @param brain
 func (f *SimpleDecorator) OnStart(brain bcore.IBrain) {
 	f.Decorator.OnStart(brain)
-	f.Decorated().Start(brain)
+	f.Decorated(brain).Start(brain)
 }
 
 // OnAbort
@@ -25,7 +25,7 @@ func (f *SimpleDecorator) OnStart(brain bcore.IBrain) {
 //  @param brain
 func (f *SimpleDecorator) OnAbort(brain bcore.IBrain) {
 	f.Decorator.OnAbort(brain)
-	f.Decorated().Abort(brain)
+	f.Decorated(brain).Abort(brain)
 }
 
 // OnChildFinished

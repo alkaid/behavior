@@ -20,6 +20,8 @@ linters-settings:
   gosec:
     excludes:
       - G404
+      - G501
+      - G401
   gocritic:
     enabled-tags:
       - diagnostic

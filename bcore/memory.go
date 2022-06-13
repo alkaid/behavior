@@ -46,10 +46,12 @@ func MapValue[T any](m Memory, key string) (T, bool) {
 
 // NodeMemory 节点数据
 type NodeMemory struct {
-	Ext         Memory     // 扩展数据,给框架之外的自定义节点使用
-	State       NodeState  // 节点状态
-	MountParent IContainer // 父节点,仅 Root 有效
-	Observing   bool       // 是否监听中,仅 ObservingDecorator 及其派生类有效
+	Ext                 Memory     // 扩展数据,给框架之外的自定义节点使用
+	State               NodeState  // 节点状态
+	MountParent         IContainer // 动态挂载的父节点,仅 Root 有效
+	DynamicChild        INode      // 动态挂载的子节点
+	RequestDynamicChild INode      // 请求挂载的子节点,延迟到旧的分支执行完成后才真正挂载到 DynamicChild
+	Observing           bool       // 是否监听中,仅 ObservingDecorator 及其派生类有效
 	// 根据节点类型意义不同:
 	//  1.非随机组合节点:当前运行中的子节点索引;
 	//  2.随机组合节点:完成了几个子节点;

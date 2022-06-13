@@ -87,7 +87,7 @@ func (o *ObservingDecorator) OnStart(brain IBrain) {
 	if !o.IObservingWorker.ConditionMet(brain) {
 		o.Finish(brain, false)
 	} else {
-		o.decorated.Start(brain)
+		o.Decorated(brain).Start(brain)
 	}
 }
 

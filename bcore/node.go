@@ -2,12 +2,14 @@ package bcore
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/samber/lo"
 
 	"github.com/alkaid/behavior/config"
 	"github.com/alkaid/behavior/logger"
+	"github.com/disiqueira/gotree"
 	"go.uber.org/zap"
 )
 
@@ -78,9 +80,13 @@ type INode interface {
 	// Parent 获取父节点
 	//  @return IContainer
 	Parent(brain IBrain) IContainer
-	// SetParent 设置父节点
+	// SetParent 设置父节点/或者静态挂载
 	//  @param parent
-	SetParent(brain IBrain, parent IContainer)
+	SetParent(parent IContainer)
+	// DynamicMount 将自己作为子树动态挂载到 parent
+	//  @param brain
+	//  @param parent
+	DynamicMount(brain IBrain, parent IContainer)
 	Log() *zap.Logger
 }
 
@@ -160,9 +166,12 @@ func (n *Node) Init(cfg *config.NodeCfg) {
 func (n *Node) InitNodeWorker(worker INodeWorker) {
 	n.INodeWorker = worker
 	properties := worker.PropertiesClassProvider()
+	if properties == nil {
+		n.properties = nil
+	}
 	err := json.Unmarshal(n.properties.(json.RawMessage), properties)
 	if err != nil {
-		n.Log().Fatal("cannot unmarshal properties")
+		n.Log().Fatal("cannot unmarshal properties", zap.Error(err))
 	}
 	n.properties = properties
 }
@@ -224,28 +233,41 @@ func (n *Node) IsAborting(brain IBrain) bool {
 }
 
 // Parent
-//  @implement IChild.Parent()
+//  @implement INode.Parent()
 //  @receiver n
 //  @return IContainer
 //
 func (n *Node) Parent(brain IBrain) IContainer {
 	// 注意行为树是单例,故动态挂载的节点从黑板获取父节点,目前只有root可以
 	if n.INodeWorker.CanMounted() {
-		return brain.Blackboard().(IBlackboardInternal).NodeMemory(n.id).MountParent
+		mountParent := brain.Blackboard().(IBlackboardInternal).NodeMemory(n.id).MountParent
+		// 不为空为动态挂载,否则为静态挂载
+		if mountParent != nil {
+			return mountParent
+		}
 	}
 	return n.parent
 }
 
 // SetParent
-//  @implement IChild.SetParent
+//  @implement INode.SetParent
 //  @receiver n
 //  @param parent
 //
-func (n *Node) SetParent(brain IBrain, parent IContainer) {
-	if n.INodeWorker.CanMounted() {
-		brain.Blackboard().(IBlackboardInternal).NodeMemory(n.id).MountParent = parent
-	}
+func (n *Node) SetParent(parent IContainer) {
 	n.parent = parent
+}
+
+// DynamicMount
+//  @implement INode.DynamicMount
+//  @receiver n
+//  @param brain
+//  @param parent
+func (n *Node) DynamicMount(brain IBrain, parent IContainer) {
+	if !n.INodeWorker.CanMounted() {
+		n.Log().Fatal("cannot mount for this node")
+	}
+	brain.Blackboard().(IBlackboardInternal).NodeMemory(n.id).MountParent = parent
 }
 
 // Root
@@ -394,7 +416,7 @@ func (n *Node) OnCompositeAncestorFinished(brain IBrain, composite IComposite) {
 //  @receiver n
 //  @return any
 func (n *Node) PropertiesClassProvider() any {
-	return make(map[string]any)
+	return &map[string]any{}
 }
 
 // CanMounted
@@ -415,4 +437,25 @@ func (n *Node) OnString(brain IBrain) string {
 
 func (n *Node) Log() *zap.Logger {
 	return logger.Log.With(zap.String("id", n.id), zap.String("name", n.name), zap.String("title", n.title))
+}
+
+func Print(node INode, brain IBrain) {
+	tree := gotree.New(node.Title())
+	printStep(node, brain, tree)
+	fmt.Print(tree.Print())
+}
+
+func printStep(node INode, brain IBrain, printerParent gotree.Tree) {
+	if node.Category() == CategoryDecorator {
+		dec := node.(IDecorator)
+		if dec.Decorated(brain) != nil {
+			printStep(dec.Decorated(brain), brain, printerParent.Add(dec.Decorated(brain).Title()))
+		}
+	}
+	if node.Category() == CategoryComposite {
+		comp := node.(IComposite)
+		for _, child := range comp.Children() {
+			printStep(child, brain, printerParent.Add(child.Title()))
+		}
+	}
 }

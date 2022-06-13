@@ -1,7 +1,9 @@
-package decorator
+package task
 
 import (
 	"time"
+
+	"github.com/alkaid/behavior/util"
 
 	"github.com/alkaid/behavior/timer"
 	"github.com/alkaid/timingwheel"
@@ -17,17 +19,17 @@ type IWaitProperties interface {
 
 // WaitProperties 等待属性
 type WaitProperties struct {
-	WaitTime        time.Duration `json:"waitTime"`        // 等待时间
-	RandomDeviation time.Duration `json:"randomDeviation"` // 随机偏差:允许向 等待时间（Wait Time） 属性添加随机时间（正或负）
+	WaitTime        util.Duration `json:"waitTime"`        // 等待时间
+	RandomDeviation util.Duration `json:"randomDeviation"` // 随机偏差:允许向 等待时间（Wait Time） 属性添加随机时间（正或负）
 	Forever         bool          `json:"forever"`         // 永久等待直到被外界打断
 }
 
 func (w *WaitProperties) GetWaitTime() time.Duration {
-	return w.WaitTime
+	return w.WaitTime.Duration
 }
 
 func (w *WaitProperties) GetRandomDeviation() time.Duration {
-	return w.RandomDeviation
+	return w.RandomDeviation.Duration
 }
 
 func (w *WaitProperties) GetForever() bool {

@@ -63,9 +63,13 @@ const (
 // 节点类别
 const (
 	CategoryComposite = "composite" // 组合节点
+	CategoryDecorator = "decorator" // 组合节点
+	CategoryTask      = "task"      // 组合节点
 )
 
 // 节点名称
 const (
-	NodeNameRoot = "Root" // root
+	NodeNameRoot           = "Root"
+	NodeNameSubtree        = "Subtree"
+	NodeNameDynamicSubtree = "DynamicSubtree"
 )

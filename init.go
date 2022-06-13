@@ -9,6 +9,7 @@ import (
 	"github.com/alkaid/behavior/bcore"
 
 	"github.com/alkaid/behavior/composite"
+	"github.com/alkaid/behavior/task"
 
 	"github.com/alkaid/behavior/logger"
 	"go.uber.org/zap/zapcore"
@@ -39,13 +40,35 @@ func InitSystem(opts ...Option) {
 	timer.InitPoolInstance(option.TimerPoolSize, option.TimerInterval, option.TimerNumSlots)
 	logger.Manager.SetDevelopment(option.LogDevelopment)
 	logger.Manager.SetLevel(option.LogLevel)
-	// TODO built in class register
+	// built in class register
+	GlobalClassLoader().Register(&bcore.Root{})
+
 	GlobalClassLoader().Register(&composite.Sequence{})
 	GlobalClassLoader().Register(&composite.Selector{})
 	GlobalClassLoader().Register(&composite.RandomSequence{})
 	GlobalClassLoader().Register(&composite.RandomSelector{})
 	GlobalClassLoader().Register(&composite.Parallel{})
+
+	GlobalClassLoader().Register(&decorator.BBCondition{})
+	GlobalClassLoader().Register(&decorator.BBCooldown{})
+	GlobalClassLoader().Register(&decorator.BBEntries{})
+	GlobalClassLoader().Register(&decorator.Condition{})
+	GlobalClassLoader().Register(&decorator.Cooldown{})
+	GlobalClassLoader().Register(&decorator.Failure{})
+	GlobalClassLoader().Register(&decorator.Inverter{})
+	GlobalClassLoader().Register(&decorator.Random{})
+	GlobalClassLoader().Register(&decorator.Repeater{})
 	GlobalClassLoader().Register(&decorator.Service{})
+	GlobalClassLoader().Register(&decorator.Succeeded{})
+	GlobalClassLoader().Register(&decorator.TimeMax{})
+	GlobalClassLoader().Register(&decorator.TimeMin{})
+	GlobalClassLoader().Register(&decorator.WaitCondition{})
+
+	GlobalClassLoader().Register(&task.Action{})
+	GlobalClassLoader().Register(&task.Wait{})
+	GlobalClassLoader().Register(&task.WaitBB{})
+	GlobalClassLoader().Register(&task.Subtree{})
+	GlobalClassLoader().Register(&task.DynamicSubtree{})
 	// 注册自定义节点
 	for _, class := range option.CustomNodeClass {
 		GlobalClassLoader().Register(class)

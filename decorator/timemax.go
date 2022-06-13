@@ -3,6 +3,8 @@ package decorator
 import (
 	"time"
 
+	"github.com/alkaid/behavior/util"
+
 	"github.com/alkaid/behavior/timer"
 	"github.com/alkaid/timingwheel"
 
@@ -17,17 +19,17 @@ type ITimeMaxProperties interface {
 
 // TimeMaxProperties 最大时限装饰器属性
 type TimeMaxProperties struct {
-	Limit               time.Duration `json:"Limit"`               // 最大时限
-	RandomDeviation     time.Duration `json:"randomDeviation"`     // 随机偏差:将一个随机范围数值添加至服务节点的 冷却时间（cooldownTime） 值。
+	Limit               util.Duration `json:"limit"`               // 最大时限
+	RandomDeviation     util.Duration `json:"randomDeviation"`     // 随机偏差:将一个随机范围数值添加至服务节点的 冷却时间（cooldownTime） 值。
 	WaitForChildButFail bool          `json:"waitForChildButFail"` // true:超时后依然等待子节点完成,但将修改结果为失败 false:超时后立即关闭子节点
 }
 
 func (t TimeMaxProperties) GetLimit() time.Duration {
-	return t.Limit
+	return t.Limit.Duration
 }
 
 func (t TimeMaxProperties) GetRandomDeviation() time.Duration {
-	return t.RandomDeviation
+	return t.RandomDeviation.Duration
 }
 func (t TimeMaxProperties) GetWaitForChildButFail() bool {
 	return t.WaitForChildButFail
@@ -58,7 +60,7 @@ func (m *TimeMax) OnStart(brain bcore.IBrain) {
 	m.Decorator.OnStart(brain)
 	m.Memory(brain).LimitReached = false
 	m.startTimer(brain)
-	m.Decorated().Start(brain)
+	m.Decorated(brain).Start(brain)
 }
 
 // OnAbort
@@ -68,8 +70,8 @@ func (m *TimeMax) OnStart(brain bcore.IBrain) {
 func (m *TimeMax) OnAbort(brain bcore.IBrain) {
 	m.Decorator.OnAbort(brain)
 	m.stopTimer(brain)
-	if m.Decorated().IsActive(brain) {
-		m.Decorated().Abort(brain)
+	if m.Decorated(brain).IsActive(brain) {
+		m.Decorated(brain).Abort(brain)
 	} else {
 		m.Finish(brain, false)
 	}
@@ -94,10 +96,10 @@ func (m *TimeMax) OnChildFinished(brain bcore.IBrain, child bcore.INode, succeed
 func (b *TimeMax) getTaskFun(brain bcore.IBrain) func() {
 	return func() {
 		if !b.TimeMaxProperties().GetWaitForChildButFail() {
-			b.Decorated().Abort(brain)
+			b.Decorated(brain).Abort(brain)
 		} else {
 			b.Memory(brain).LimitReached = true
-			if !b.Decorated().IsActive(brain) {
+			if !b.Decorated(brain).IsActive(brain) {
 				b.Log().Fatal("decorated must be active")
 			}
 		}

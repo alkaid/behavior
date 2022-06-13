@@ -13,6 +13,6 @@ type Sequence struct {
 //  @receiver s
 //  @param brain
 //  @return behavior.FinishMode
-func (s *Sequence) SuccessMode(brain bcore.IBrain) bcore.FinishMode {
+func (s *Sequence) SuccessMode() bcore.FinishMode {
 	return bcore.FinishModeAll
 }

@@ -3,6 +3,8 @@ package decorator
 import (
 	"time"
 
+	"github.com/alkaid/behavior/util"
+
 	"github.com/alkaid/timingwheel"
 
 	"github.com/alkaid/behavior/timer"
@@ -17,16 +19,16 @@ type IServiceProperties interface {
 
 // ServiceProperties 服务节点属性
 type ServiceProperties struct {
-	Interval        time.Duration `json:"interval"`        // 执行间隔，配0则为行为树默认时间轮间隔
-	RandomDeviation time.Duration `json:"randomDeviation"` // 随机偏差:将一个随机范围数值添加至服务节点的 时间间隔（Interval） 值。
+	Interval        util.Duration `json:"interval"`        // 执行间隔，配0则为行为树默认时间轮间隔
+	RandomDeviation util.Duration `json:"randomDeviation"` // 随机偏差:将一个随机范围数值添加至服务节点的 时间间隔（Interval） 值。
 }
 
 func (s *ServiceProperties) GetInterval() time.Duration {
-	return s.Interval
+	return s.Interval.Duration
 }
 
 func (s *ServiceProperties) GetRandomDeviation() time.Duration {
-	return s.RandomDeviation
+	return s.RandomDeviation.Duration
 }
 
 // Service 服务.
@@ -65,7 +67,7 @@ func (s *Service) OnStart(brain bcore.IBrain) {
 		lastTime = currTime
 	}, timingwheel.WithGoID(brain.Blackboard().(bcore.IBlackboardInternal).ThreadID()))
 	s.Execute(brain, bcore.EventTypeOnStart, 0)
-	s.Decorated().Start(brain)
+	s.Decorated(brain).Start(brain)
 }
 
 // OnChildFinished

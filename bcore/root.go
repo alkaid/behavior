@@ -3,6 +3,8 @@ package bcore
 import (
 	"time"
 
+	"github.com/alkaid/behavior/util"
+
 	"github.com/alkaid/behavior/thread"
 	"github.com/samber/lo"
 
@@ -18,14 +20,14 @@ type iRootProperties interface {
 type rootProperties struct {
 	BaseProperties
 	Once     bool          `json:"once"`     // 是否仅运行一次,反之永远循环
-	Interval time.Duration `json:"interval"` // 默认更新间隔
+	Interval util.Duration `json:"interval"` // 默认更新间隔
 }
 
 func (r *rootProperties) IsOnce() bool {
 	return r.Once
 }
 func (r *rootProperties) GetInterval() time.Duration {
-	return r.Interval
+	return r.Interval.Duration
 }
 
 type IRoot interface {
@@ -98,7 +100,7 @@ func (r *Root) OnStart(brain IBrain) {
 		brain.Blackboard().(IBlackboardInternal).Start()
 	}
 	// 开启子节点
-	r.decorated.Start(brain)
+	r.Decorated(brain).Start(brain)
 }
 
 // OnAbort
@@ -106,9 +108,9 @@ func (r *Root) OnStart(brain IBrain) {
 //  @receiver r
 //  @param brain
 func (r *Root) OnAbort(brain IBrain) {
-	r.Node.OnAbort(brain)
+	r.Decorator.OnAbort(brain)
 	if r.IsActive(brain) {
-		r.decorated.Abort(brain)
+		r.Decorated(brain).Abort(brain)
 		return
 	}
 	// TODO 这里是否有异步异常情况未考虑
@@ -144,7 +146,7 @@ func (r *Root) OnChildFinished(brain IBrain, child INode, succeeded bool) {
 			// 若是主树且可以循环，开启下一轮
 			// 不能直接 Start(),会堆栈溢出且阻塞其他分支,应该重新异步派发
 			thread.GoByID(brain.Blackboard().(IBlackboardInternal).ThreadID(), func() {
-				r.decorated.Start(brain)
+				r.Decorated(brain).Start(brain)
 			})
 		}
 	}

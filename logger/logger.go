@@ -122,6 +122,8 @@ func (l *Logger) SetDevelopment(enable bool) {
 	}
 	l.Log = log
 	l.Sugar = log.Sugar()
+	Log = l.Log
+	Sugar = l.Sugar
 }
 
 type LogConf struct {

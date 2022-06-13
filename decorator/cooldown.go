@@ -3,6 +3,8 @@ package decorator
 import (
 	"time"
 
+	"github.com/alkaid/behavior/util"
+
 	"github.com/alkaid/behavior/bcore"
 )
 
@@ -12,11 +14,11 @@ type ICooldownProperties interface {
 
 // CooldownProperties cd等待装饰器属性
 type CooldownProperties struct {
-	CooldownTime time.Duration `json:"cooldownTime"` // 冷却时间
+	CooldownTime util.Duration `json:"cooldownTime"` // 冷却时间
 }
 
 func (p *CooldownProperties) GetCooldownTime() time.Duration {
-	return p.CooldownTime
+	return p.CooldownTime.Duration
 }
 
 // Cooldown cd等待装饰器

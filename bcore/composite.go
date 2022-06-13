@@ -1,14 +1,10 @@
 package bcore
 
-import (
-	"go.uber.org/zap"
-)
-
 // IComposite 复合节点
 type IComposite interface {
 	IContainer
-	AddChild(brain IBrain, child INode)
-	AddChildren(brain IBrain, children []INode)
+	AddChild(child INode)
+	AddChildren(children []INode)
 	Children() []INode
 	// AbortLowerPriorityChildrenForChild 中断低优先级分支
 	//  子类必须覆写
@@ -28,20 +24,14 @@ type Composite struct {
 func (c *Composite) Children() []INode {
 	return c.children
 }
-func (c *Composite) AddChild(brain IBrain, child INode) {
-	if child.Parent(brain) != nil {
-		c.Log().Fatal("child's parent is not nil", zap.String("child", child.String(brain)))
-	}
-	child.SetParent(brain, c)
+func (c *Composite) AddChild(child INode) {
+	child.SetParent(c)
 	c.children = append(c.children, child)
 }
 
-func (c *Composite) AddChildren(brain IBrain, children []INode) {
+func (c *Composite) AddChildren(children []INode) {
 	for _, child := range children {
-		if child.Parent(brain) != nil {
-			c.Log().Fatal("child's parent is not nil", zap.String("child", child.String(brain)))
-		}
-		child.SetParent(brain, c)
+		child.SetParent(c)
 	}
 	c.children = append(c.children, children...)
 }

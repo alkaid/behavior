@@ -7,8 +7,6 @@ import (
 
 // TODO 全局 nodeTypeMap
 
-const defaultNanoIDLen = 8
-
 var sharedBlackboard = make(map[string]*bcore.Blackboard) // 全局共享黑板
 
 // SharedBlackboard 获取全局共享黑板单例,若不存在会创建一个

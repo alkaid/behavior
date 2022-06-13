@@ -3,6 +3,10 @@ package util
 import (
 	"reflect"
 	"strconv"
+
+	"github.com/alkaid/behavior/logger"
+	gonanoid "github.com/matoous/go-nanoid"
+	"go.uber.org/zap"
 )
 
 func Float(origin any) (out float64, ok bool) {
@@ -26,4 +30,16 @@ func Float(origin any) (out float64, ok bool) {
 		}
 	}
 	return out, ok
+}
+
+const defaultNanoIDLen = 8
+
+// NanoID 随机唯一ID like UUID
+//  @return string
+func NanoID() string {
+	id, err := gonanoid.ID(defaultNanoIDLen)
+	if err != nil {
+		logger.Log.Error("", zap.Error(err))
+	}
+	return id
 }

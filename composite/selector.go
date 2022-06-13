@@ -13,6 +13,6 @@ type Selector struct {
 //  @receiver s
 //  @param brain
 //  @return behavior.FinishMode
-func (s *Selector) SuccessMode(brain bcore.IBrain) bcore.FinishMode {
+func (s *Selector) SuccessMode() bcore.FinishMode {
 	return bcore.FinishModeOne
 }

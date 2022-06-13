@@ -3,6 +3,8 @@ package decorator
 import (
 	"time"
 
+	"github.com/alkaid/behavior/util"
+
 	"github.com/alkaid/behavior/bcore"
 	"github.com/alkaid/behavior/timer"
 	"github.com/alkaid/timingwheel"
@@ -20,7 +22,7 @@ type CooldownBaseProperties struct {
 	StartAfterDecorated bool          `json:"startAfterDecorated"` // 是否在子节点完成后才进入cd
 	ResetOnFailure      bool          `json:"resetOnFailure"`      // 子节点取消后是否重置cd
 	FailOnCoolDown      bool          `json:"failOnCoolDown"`      // true:cd时间未到却被请求执行时停用当前节点并返回false false:什么都不做
-	RandomDeviation     time.Duration `json:"randomDeviation"`     // 随机偏差:将一个随机范围数值添加至服务节点的 冷却时间（cooldownTime） 值。
+	RandomDeviation     util.Duration `json:"randomDeviation"`     // 随机偏差:将一个随机范围数值添加至服务节点的 冷却时间（cooldownTime） 值。
 }
 
 func (p *CooldownBaseProperties) GetStartAfterDecorated() bool {
@@ -36,7 +38,7 @@ func (p *CooldownBaseProperties) GetFailOnCoolDown() bool {
 }
 
 func (p *CooldownBaseProperties) GetRandomDeviation() time.Duration {
-	return p.RandomDeviation
+	return p.RandomDeviation.Duration
 }
 
 // CooldownBase cd等待装饰器
@@ -84,7 +86,7 @@ func (b *CooldownBase) OnStart(brain bcore.IBrain) {
 		if !b.CooldownProperties().GetStartAfterDecorated() {
 			b.startTimer(brain)
 		}
-		b.Decorated().Start(brain)
+		b.Decorated(brain).Start(brain)
 		return
 	}
 	if b.CooldownProperties().GetFailOnCoolDown() {
@@ -100,8 +102,8 @@ func (b *CooldownBase) OnAbort(brain bcore.IBrain) {
 	b.Decorator.OnAbort(brain)
 	b.Memory(brain).Cooling = false
 	b.stopTimer(brain)
-	if b.Decorated().IsActive(brain) {
-		b.Decorated().Abort(brain)
+	if b.Decorated(brain).IsActive(brain) {
+		b.Decorated(brain).Abort(brain)
 	} else {
 		b.Finish(brain, false)
 	}
@@ -126,9 +128,9 @@ func (b *CooldownBase) OnChildFinished(brain bcore.IBrain, child bcore.INode, su
 
 func (b *CooldownBase) getTaskFun(brain bcore.IBrain) func() {
 	return func() {
-		if b.IsActive(brain) && !b.Decorated().IsActive(brain) {
+		if b.IsActive(brain) && !b.Decorated(brain).IsActive(brain) {
 			b.startTimer(brain)
-			b.Decorated().Start(brain)
+			b.Decorated(brain).Start(brain)
 		} else {
 			b.Memory(brain).Cooling = false
 		}

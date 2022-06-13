@@ -28,7 +28,7 @@ type IBBEntriesProperties interface {
 type BBEntriesProperties struct {
 	bcore.ObservingProperties
 	Operator BBEntriesOp `json:"operator"` // 运算符
-	Keys     []string    `json:"key"`      // 黑板键
+	Keys     []string    `json:"keys"`     // 黑板键
 	Query    string      `json:"query"`    // 自定义查询语句
 }
 
