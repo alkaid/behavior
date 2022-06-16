@@ -42,6 +42,8 @@ func (n *NodeRegistry) Register(node bcore.INode) {
 	n.registry[node.ID()] = node
 }
 
+// TODO 只实现了加载 以后再实现卸载
+
 // TreeRegistry 行为树注册器
 type TreeRegistry struct {
 	TreesByID  map[string]*Tree         // 所有树,索引为ID

@@ -77,10 +77,11 @@ func (n *NonParallel) OnOrder(brain bcore.IBrain, originChildrenOrder []int) (or
 //  @override Node.InitNodeWorker
 //  @receiver c
 //  @param worker
-func (n *NonParallel) InitNodeWorker(worker bcore.INodeWorker) {
-	n.Composite.InitNodeWorker(worker)
+func (n *NonParallel) InitNodeWorker(worker bcore.INodeWorker) error {
+	err := n.Composite.InitNodeWorker(worker)
 	// 强转,由框架本身保证实例化时传进来的worker是自己(自己实现了 INonParallelWorker 接口,故强转不会panic)
 	n.INonParallelWorker = worker.(INonParallelWorker)
+	return err
 }
 
 // OnStart

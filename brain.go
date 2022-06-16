@@ -4,9 +4,12 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/alkaid/behavior/bcore"
+	"go.uber.org/zap"
 
-	"github.com/pkg/errors"
+	"github.com/alkaid/behavior/handle"
+	handle2 "github.com/alkaid/behavior/handle"
+
+	"github.com/alkaid/behavior/bcore"
 
 	"github.com/alkaid/behavior/logger"
 )
@@ -17,14 +20,14 @@ var _ bcore.IBrain = (*Brain)(nil)
 type ExecutorFun = func(eventType bcore.EventType, delta time.Duration) bcore.Result
 
 type Brain struct {
-	blackboard bcore.IBlackboard
-	delegates  map[string]*bcore.DelegateMeta
+	blackboard    bcore.IBlackboard
+	delegatesMeta map[string]*bcore.DelegateMeta
 }
 
 func NewBrain(blackboard bcore.IBlackboard, delegates map[string]any) bcore.IBrain {
 	b := &Brain{
-		blackboard: blackboard,
-		delegates:  map[string]*bcore.DelegateMeta{},
+		blackboard:    blackboard,
+		delegatesMeta: map[string]*bcore.DelegateMeta{},
 	}
 	b.SetDelegates(delegates)
 	return b
@@ -42,7 +45,7 @@ func (b *Brain) RegisterDelegate(name string, delegate any) {
 	if delegate == nil {
 		logger.Log.Fatal("delegate can't be nil")
 	}
-	b.delegates[name] = &bcore.DelegateMeta{
+	b.delegatesMeta[name] = &bcore.DelegateMeta{
 		Delegate:     delegate,
 		ReflectValue: reflect.ValueOf(delegate),
 	}
@@ -50,17 +53,83 @@ func (b *Brain) RegisterDelegate(name string, delegate any) {
 
 // SetDelegates 注册委托对象
 //  @receiver b
-//  @param delegates
+//  @param delegatesMeta
 func (b *Brain) SetDelegates(delegates map[string]any) {
 	for name, d := range delegates {
 		b.RegisterDelegate(name, d)
 	}
 }
 
-func (b *Brain) OnExecute(target string, method string, args ...any) ([]any, error) {
-	dmeta := b.delegates[target]
-	if dmeta == nil {
-		return nil, errors.New("target is nil")
+// GetDelegates 获取委托map拷贝
+//  @receiver b
+//  @return map[string]any
+func (b *Brain) GetDelegates() map[string]any {
+	delegates := map[string]any{}
+	for name, meta := range b.delegatesMeta {
+		delegates[name] = meta.Delegate
 	}
-	return GlobalHandlerPool().ProcessHandlerMessage(target, dmeta.Delegate, dmeta.ReflectValue, method, args...)
+	return delegates
+}
+func (b *Brain) GetDelegate(name string) (delegate any, ok bool) {
+	meta, ok := b.delegatesMeta[name]
+	if ok {
+		return meta.Delegate, ok
+	}
+	return nil, false
+}
+
+// OnNodeUpdate 供节点回调执行委托
+//  @receiver b
+//  @param target
+//  @param method
+//  @param brain
+//  @param eventType
+//  @param delta
+//  @return bcore.Result
+func (b *Brain) OnNodeUpdate(target string, method string, brain bcore.IBrain, eventType bcore.EventType, delta time.Duration) bcore.Result {
+	log := logger.Log.With(zap.String("target", target), zap.String("method", method), zap.Int("eventType", int(eventType)))
+	meta := b.delegatesMeta[target]
+	if meta == nil {
+		log.Error("target is nil,please register delegate before run behavior tree")
+		return bcore.ResultFailed
+	}
+	handler := GlobalHandlerPool().GetHandle(target, method)
+	if handler == nil || handler.MethodType == handle2.MtNone {
+		log.Error("handler is nil,please register target to GlobalHandlerPool() before run behavior tree")
+		return bcore.ResultFailed
+	}
+	var rets []any
+	var err error
+	log = log.With(zap.Int("methodType", int(handler.MethodType)))
+	switch handler.MethodType {
+	case handle.MtFullStyle:
+		_, rets, err = GlobalHandlerPool().ProcessHandler(handler, meta.ReflectValue, brain, eventType, delta)
+	default:
+		_, rets, err = GlobalHandlerPool().ProcessHandler(handler, meta.ReflectValue)
+	}
+	// 出错默认返回失败
+	if err != nil {
+		log.Error("handler reflect method call error", zap.Error(err))
+		return bcore.ResultFailed
+	}
+	// 出参只能0个或1个
+	switch len(rets) {
+	case 0:
+		return bcore.ResultSucceeded
+	case 1:
+		// 1个时判断是error还是result
+		if err, ok := rets[0].(error); ok {
+			log.Error("delegator method return error", zap.Error(err))
+			return bcore.ResultFailed
+		}
+		if result, ok := rets[0].(bcore.Result); ok {
+			return result
+		}
+		// 出参类型超限
+		log.Error("delegator method return type illegal")
+		return bcore.ResultFailed
+	}
+	// 出参数量超限
+	log.Error("delegator method return value's number illegal")
+	return bcore.ResultFailed
 }

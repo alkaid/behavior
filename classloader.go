@@ -33,8 +33,14 @@ func (l *ClassLoader) New(name string, cfg *config.NodeCfg) (bcore.INode, error)
 	var err error
 	if v, ok := l.registry[name]; ok {
 		c := reflect.New(v).Interface().(bcore.INode)
-		c.Init(cfg)
-		c.InitNodeWorker(c.(bcore.INodeWorker))
+		err = c.Init(cfg)
+		if err != nil {
+			return nil, err
+		}
+		err = c.InitNodeWorker(c.(bcore.INodeWorker))
+		if err != nil {
+			return nil, err
+		}
 		return c, nil
 	} else {
 		err = errors.WithStack(fmt.Errorf("not found struct %s", name))

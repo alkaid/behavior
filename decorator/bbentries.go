@@ -6,7 +6,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/alkaid/behavior/bcore"
-	"github.com/antonmedv/expr"
 )
 
 // BBEntriesOp 比较黑板条目操作符
@@ -15,7 +14,6 @@ type BBEntriesOp int
 const (
 	BBEntriesOpEqual    BBEntriesOp = iota // 相等
 	BBEntriesOpNotEqual                    // 不相等
-	BBEntriesOpQuery                       // 自定义查询
 )
 
 type IBBEntriesProperties interface {
@@ -92,8 +90,8 @@ func (e *BBEntries) StopObserving(brain bcore.IBrain) {
 //  @return bool
 func (e *BBEntries) ConditionMet(brain bcore.IBrain, args ...any) bool {
 	// 若委托存在,优先使用委托
-	if e.HasDelegator() {
-		ret := e.Execute(brain, bcore.EventTypeOnUpdate, 0)
+	if e.HasDelegatorOrScript() {
+		ret := e.Update(brain, bcore.EventTypeOnUpdate, 0)
 		return ret == bcore.ResultSucceeded
 	}
 	var strValues []string
@@ -114,29 +112,6 @@ func (e *BBEntries) ConditionMet(brain bcore.IBrain, args ...any) bool {
 		return allEqual
 	case BBEntriesOpNotEqual:
 		return !allEqual
-	case BBEntriesOpQuery:
-		// 开始编译执行自定义脚本
-		if e.BBEntriesProperties().GetQuery() == "" {
-			e.Log().Error("query can not be empty")
-			return false
-		}
-		p, err := expr.Compile(e.BBEntriesProperties().GetQuery(),
-			expr.AsBool(),
-		)
-		if err != nil {
-			e.Log().Error("compile custom query error", zap.Error(err))
-			return false
-		}
-		env := map[string]any{}
-		for _, key := range e.BBEntriesProperties().GetKeys() {
-			env[key], _ = brain.Blackboard().Get(key)
-		}
-		ret, err := expr.Run(p, env)
-		if err != nil {
-			e.Log().Error("run query error", zap.Error(err))
-			return false
-		}
-		return ret.(bool)
 	}
 	e.Log().Error("not support operator", zap.Int("operator", int(e.BBEntriesProperties().GetOperator())))
 	return false

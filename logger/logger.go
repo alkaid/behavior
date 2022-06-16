@@ -122,8 +122,6 @@ func (l *Logger) SetDevelopment(enable bool) {
 	}
 	l.Log = log
 	l.Sugar = log.Sugar()
-	Log = l.Log
-	Sugar = l.Sugar
 }
 
 type LogConf struct {
@@ -164,4 +162,13 @@ func (l LoaderFactory) Reload(key string, confStruct interface{}) {
 }
 func (l LoaderFactory) Provide() (key string, confStruct interface{}) {
 	return l.ProvideApply()
+}
+
+func SetLevel(level any) {
+	Manager.SetLevel(level)
+}
+func SetDevelopment(enable bool) {
+	Manager.SetDevelopment(enable)
+	Log = Manager.Log
+	Sugar = Manager.Sugar
 }

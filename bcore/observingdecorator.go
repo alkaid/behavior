@@ -51,10 +51,11 @@ var _ IObservingWorker = (*ObservingDecorator)(nil)
 //  @override Node.InitNodeWorker
 //  @receiver c
 //  @param worker
-func (o *ObservingDecorator) InitNodeWorker(worker INodeWorker) {
-	o.Decorator.InitNodeWorker(worker)
+func (o *ObservingDecorator) InitNodeWorker(worker INodeWorker) error {
+	err := o.Decorator.InitNodeWorker(worker)
 	// 强转,由框架本身保证实例化时传进来的worker是自己(自己实现了IContainerWorker接口,故强转不会panic)
 	o.IObservingWorker = worker.(IObservingWorker)
+	return err
 }
 
 // AbortMode 中断模式

@@ -4,6 +4,9 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/alkaid/behavior/script"
+	"go.uber.org/zap"
+
 	"github.com/alkaid/behavior/decorator"
 
 	"github.com/alkaid/behavior/bcore"
@@ -23,23 +26,35 @@ import (
 // InitSystem 系统初始化
 //  要使用该库必须先初始化
 //  @param option
+//  @panic 若发生异常将主动panic
 func InitSystem(opts ...Option) {
 	rand.Seed(time.Now().UnixNano())
 	option := &InitialOption{
-		ThreadPool:     nil,
-		TimerPoolSize:  1,
-		TimerInterval:  10 * time.Millisecond,
-		TimerNumSlots:  100,
-		LogLevel:       zapcore.ErrorLevel,
-		LogDevelopment: false,
+		ThreadPool:        nil,
+		TimerPoolSize:     1,
+		TimerInterval:     10 * time.Millisecond,
+		TimerNumSlots:     100,
+		LogLevel:          zapcore.ErrorLevel,
+		LogDevelopment:    false,
+		ScriptPoolMinSize: 10,
+		ScriptPoolMaxSize: 1000,
 	}
 	for _, opt := range opts {
 		opt(option)
 	}
-	thread.InitPool(option.ThreadPool)
-	timer.InitPoolInstance(option.TimerPoolSize, option.TimerInterval, option.TimerNumSlots)
-	logger.Manager.SetDevelopment(option.LogDevelopment)
-	logger.Manager.SetLevel(option.LogLevel)
+	logger.SetDevelopment(option.LogDevelopment)
+	logger.SetLevel(option.LogLevel)
+	err := thread.InitPool(option.ThreadPool)
+	if err != nil {
+		logger.Log.Fatal("init behavior system error", zap.Error(err))
+		return
+	}
+	timer.InitPool(option.TimerPoolSize, option.TimerInterval, option.TimerNumSlots)
+	err = script.InitPool(option.ScriptPoolMinSize, option.ScriptPoolMaxSize, option.ScriptPoolApiLib)
+	if err != nil {
+		logger.Log.Fatal("init behavior system error", zap.Error(err))
+		return
+	}
 	// built in class register
 	GlobalClassLoader().Register(&bcore.Root{})
 
@@ -76,13 +91,16 @@ func InitSystem(opts ...Option) {
 }
 
 type InitialOption struct {
-	ThreadPool      *ants.Pool    // 线程池 为空则使用默认
-	TimerPoolSize   int           // 时间轮池子容量 为0则使用默认
-	TimerInterval   time.Duration // 时间轮帧间隔 为0则使用默认
-	TimerNumSlots   int           // 时间槽数量 时间轮第一层总时长=interval*numSlots 为0则使用默认
-	LogLevel        zapcore.Level // 日志级别
-	LogDevelopment  bool          // 日志模式是否开发模式
-	CustomNodeClass []bcore.INode // 用于注册自定义节点类
+	ThreadPool        *ants.Pool     // 线程池 为空则使用默认
+	TimerPoolSize     int            // 时间轮池子容量 为0则使用默认
+	TimerInterval     time.Duration  // 时间轮帧间隔 为0则使用默认
+	TimerNumSlots     int            // 时间槽数量 时间轮第一层总时长=interval*numSlots 为0则使用默认
+	LogLevel          zapcore.Level  // 日志级别
+	LogDevelopment    bool           // 日志模式是否开发模式
+	CustomNodeClass   []bcore.INode  // 用于注册自定义节点类
+	ScriptPoolMinSize int            // 脚本引擎池子最小容量
+	ScriptPoolMaxSize int            // 脚本引擎池子最大容量
+	ScriptPoolApiLib  map[string]any // 需注入到脚本引擎池的api库,最好仅注入一些公共的无状态函数或参数,避免状态副作用
 }
 
 type Option func(option *InitialOption)
@@ -122,5 +140,21 @@ func WithLogDevelopment(development bool) Option {
 func WithCustomNodes(nodes []bcore.INode) Option {
 	return func(o *InitialOption) {
 		o.CustomNodeClass = nodes
+	}
+}
+
+func WithScriptPoolMinSize(size int) Option {
+	return func(o *InitialOption) {
+		o.ScriptPoolMinSize = size
+	}
+}
+func WithScriptPoolMaxSize(size int) Option {
+	return func(o *InitialOption) {
+		o.ScriptPoolMaxSize = size
+	}
+}
+func WithScriptPoolApiLib(api map[string]any) Option {
+	return func(o *InitialOption) {
+		o.ScriptPoolApiLib = api
 	}
 }

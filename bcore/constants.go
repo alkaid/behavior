@@ -1,8 +1,12 @@
 package bcore
 
-import "time"
+import (
+	"time"
 
-const DefaultInterval = time.Millisecond * 30 // 行为树默认更新间隔
+	"github.com/alkaid/behavior/script"
+)
+
+const DefaultInterval = time.Millisecond * 50 // 行为树默认更新间隔
 
 const (
 	NodeStateInactive NodeState = iota // 非活跃
@@ -73,3 +77,15 @@ const (
 	NodeNameSubtree        = "Subtree"
 	NodeNameDynamicSubtree = "DynamicSubtree"
 )
+
+func init() {
+	// 注册常量到脚本执行环境
+	script.RegisterApi(map[string]any{
+		"ResultFailed":      ResultFailed,
+		"ResultSucceeded":   ResultSucceeded,
+		"ResultInProgress":  ResultInProgress,
+		"EventTypeOnStart":  EventTypeOnStart,
+		"EventTypeOnUpdate": EventTypeOnUpdate,
+		"EventTypeOnAbort":  EventTypeOnAbort,
+	})
+}

@@ -63,10 +63,10 @@ func (s *Service) OnStart(brain bcore.IBrain) {
 	s.Memory(brain).CronTask = timer.Cron(interval, randomDeviation, func() {
 		currTime := time.Now()
 		delta := currTime.Sub(lastTime)
-		s.Execute(brain, bcore.EventTypeOnStart, delta)
+		s.Update(brain, bcore.EventTypeOnStart, delta)
 		lastTime = currTime
 	}, timingwheel.WithGoID(brain.Blackboard().(bcore.IBlackboardInternal).ThreadID()))
-	s.Execute(brain, bcore.EventTypeOnStart, 0)
+	s.Update(brain, bcore.EventTypeOnStart, 0)
 	s.Decorated(brain).Start(brain)
 }
 

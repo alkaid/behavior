@@ -1,3 +1,4 @@
+//nolint:dupl
 package composite
 
 import (
@@ -14,9 +15,10 @@ type RandomSequence struct {
 //  @override Node.InitNodeWorker
 //  @receiver c
 //  @param worker
-func (r *RandomSequence) InitNodeWorker(worker bcore.INodeWorker) {
-	r.Sequence.InitNodeWorker(worker)
+func (r *RandomSequence) InitNodeWorker(worker bcore.INodeWorker) error {
+	err := r.Sequence.InitNodeWorker(worker)
 	r.randomWorker = NewRandomWorker(r)
+	return err
 }
 
 // PropertiesClassProvider

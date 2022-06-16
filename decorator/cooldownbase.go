@@ -58,9 +58,9 @@ type ICooldownBaseWorker interface {
 //  @override Node.InitNodeWorker
 //  @receiver c
 //  @param worker
-func (b *CooldownBase) InitNodeWorker(worker bcore.INodeWorker) {
-	b.Decorator.InitNodeWorker(worker)
+func (b *CooldownBase) InitNodeWorker(worker bcore.INodeWorker) error {
 	b.ICooldownBaseWorker = worker.(ICooldownBaseWorker)
+	return b.Decorator.InitNodeWorker(worker)
 }
 
 // PropertiesClassProvider

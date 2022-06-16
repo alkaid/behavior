@@ -34,10 +34,11 @@ type Container struct {
 //  @override Node.InitNodeWorker
 //  @receiver c
 //  @param worker
-func (c *Container) InitNodeWorker(worker INodeWorker) {
-	c.Node.InitNodeWorker(worker)
+func (c *Container) InitNodeWorker(worker INodeWorker) error {
+	err := c.Node.InitNodeWorker(worker)
 	// 强转,由框架本身保证实例化时传进来的worker是自己(自己实现了IContainerWorker接口,故强转不会panic)
 	c.IContainerWorker = worker.(IContainerWorker)
+	return err
 }
 
 // OnChildFinished

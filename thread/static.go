@@ -5,6 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/alkaid/behavior/logger"
 	"github.com/panjf2000/ants/v2"
 	"go.uber.org/zap"
@@ -15,20 +17,21 @@ const MainThreadID = math.MaxInt // 主线程ID
 var pool *ants.Pool // 线程池,主要用于分离session线程
 
 // InitPool 用默认参数初始化全局线程池
-func InitPool(p *ants.Pool) {
+func InitPool(p *ants.Pool) error {
 	if pool != nil {
 		logger.Log.Warn("init goroutine pool duplicate")
-		return
+		return nil
 	}
 	if p != nil {
 		pool = p
-		return
+		return nil
 	}
 	p, err := ants.NewPool(ants.DefaultAntsPoolSize, ants.WithTaskBuffer(ants.DefaultStatefulTaskBuffer), ants.WithExpiryDuration(time.Hour))
 	if err != nil {
-		logger.Log.Fatal("create ants pool error", zap.Error(err))
+		return errors.WithStack(err)
 	}
 	pool = p
+	return nil
 }
 
 func ReleaseTableGoPool() {

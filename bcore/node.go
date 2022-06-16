@@ -5,6 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/alkaid/behavior/script"
+
+	"github.com/pkg/errors"
+
 	"github.com/samber/lo"
 
 	"github.com/alkaid/behavior/config"
@@ -21,13 +25,13 @@ type NodeState int // 节点状态
 type INode interface {
 	// InitNodeWorker 设置回调接口,应该委托给继承树中的叶子子类实现
 	//  @param worker
-	InitNodeWorker(worker INodeWorker)
+	InitNodeWorker(worker INodeWorker) error
 	// NodeWorker 获取回调委托
 	//  @return INodeWorker
 	NodeWorker() INodeWorker
 	// Init 根据配置加载节点实例
 	//  @param cfg
-	Init(cfg *config.NodeCfg)
+	Init(cfg *config.NodeCfg) error
 	// Memory 节点数据
 	//  @receiver n
 	//  @param brain
@@ -39,9 +43,9 @@ type INode interface {
 	Properties() any
 	Name() string
 	Delegator() config.DelegatorCfg
-	// HasDelegator 是否存在委托方法
+	// HasDelegatorOrScript 是否存在委托方法或脚本
 	//  @return bool
-	HasDelegator() bool
+	HasDelegatorOrScript() bool
 	IsActive(brain IBrain) bool
 	IsInactive(brain IBrain) bool
 	IsAborting(brain IBrain) bool
@@ -141,10 +145,10 @@ type Node struct {
 //  @implement INode.Init
 //  @receiver n
 //  @param cfg
-func (n *Node) Init(cfg *config.NodeCfg) {
+func (n *Node) Init(cfg *config.NodeCfg) error {
 	err := cfg.Valid()
 	if err != nil {
-		n.Log().Fatal("", zap.Error(err))
+		return err
 	}
 	n.id = cfg.ID
 	n.name = cfg.Name
@@ -155,15 +159,21 @@ func (n *Node) Init(cfg *config.NodeCfg) {
 		n.delegator = config.DelegatorCfg{
 			Target: cfg.Delegator.Target,
 			Method: cfg.Delegator.Method,
+			Script: cfg.Delegator.Script,
+		}
+		// 预编译脚本
+		if n.delegator.Script != "" {
+			script.RegisterCode(n.id, n.delegator.Script)
 		}
 	}
+	return nil
 }
 
 // InitNodeWorker
 //  @implement INode.InitNodeWorker
 //  @receiver n
 //  @param worker
-func (n *Node) InitNodeWorker(worker INodeWorker) {
+func (n *Node) InitNodeWorker(worker INodeWorker) error {
 	n.INodeWorker = worker
 	properties := worker.PropertiesClassProvider()
 	if properties == nil {
@@ -171,9 +181,10 @@ func (n *Node) InitNodeWorker(worker INodeWorker) {
 	}
 	err := json.Unmarshal(n.properties.(json.RawMessage), properties)
 	if err != nil {
-		n.Log().Fatal("cannot unmarshal properties", zap.Error(err))
+		return errors.WithStack(err)
 	}
 	n.properties = properties
+	return nil
 }
 
 // NodeWorker
@@ -197,8 +208,8 @@ func (n *Node) Delegator() config.DelegatorCfg {
 	return n.delegator
 }
 
-func (n *Node) HasDelegator() bool {
-	return n.delegator.Method != ""
+func (n *Node) HasDelegatorOrScript() bool {
+	return n.delegator.Method != "" || n.delegator.Script != ""
 }
 
 func (n *Node) Name() string {
@@ -339,11 +350,36 @@ func (n *Node) Finish(brain IBrain, succeeded bool) {
 	}
 }
 
-func (n *Node) Execute(brain IBrain, eventType EventType, delta time.Duration) Result {
-	return n.OnExecute(brain, eventType, delta)
+func (n *Node) Update(brain IBrain, eventType EventType, delta time.Duration) Result {
+	return n.OnUpdate(brain, eventType, delta)
 }
 
-func (n *Node) OnExecute(brain IBrain, eventType EventType, delta time.Duration) Result {
+func (n *Node) OnUpdate(brain IBrain, eventType EventType, delta time.Duration) Result {
+	n.Log().Debug("OnUpdate")
+	// 优先使用脚本,脚本不存在才使用委托
+	if n.delegator.Script != "" {
+		out, err := script.RunCode(n.id, n.scriptEnv(brain, eventType, delta))
+		if err != nil {
+			n.Log().Error("run script error", zap.Error(err))
+			return ResultFailed
+		}
+		// 无返回值则默认成功
+		if out == nil {
+			return ResultSucceeded
+		}
+		switch v := out.(type) {
+		case bool:
+			return lo.If(v, ResultSucceeded).Else(ResultFailed)
+		case int64:
+			return Result(v)
+		case Result:
+			return v
+		default:
+			n.Log().Error("run script error:unSupport this type", zap.Any("return", v))
+		}
+	}
+	// 脚本不存在,改用委托
+	n.Log().Debug("script not found,use delegate instead")
 	if n.delegator.Method == "" {
 		return ResultFailed
 	}
@@ -353,12 +389,16 @@ func (n *Node) OnExecute(brain IBrain, eventType EventType, delta time.Duration)
 		return ResultFailed
 	}
 	// 交给委托执行
-	rets, err := brain.OnExecute(target, n.delegator.Method, eventType, delta)
-	if err != nil {
-		logger.Log.Error("", zap.Error(err))
-		return ResultFailed
-	}
-	return rets[0].(Result)
+	ret := brain.(IBrainInternal).OnNodeUpdate(n.delegator.Target, n.delegator.Method, brain, eventType, delta)
+	return ret
+}
+
+func (n *Node) scriptEnv(brain IBrain, eventType EventType, delta time.Duration) map[string]any {
+	env := brain.(IBrainInternal).GetDelegates()
+	env["blackboard"] = brain.Blackboard()
+	env["eventType"] = eventType
+	env["delta"] = delta
+	return env
 }
 
 // CompositeAncestorFinished
@@ -389,7 +429,7 @@ func (n *Node) Path(brain IBrain) string {
 //  @param brain
 //
 func (n *Node) OnStart(brain IBrain) {
-	n.Log().Debug(n.String(brain) + " OnStart")
+	n.Log().Debug(" OnStart")
 }
 
 // OnAbort
@@ -398,7 +438,7 @@ func (n *Node) OnStart(brain IBrain) {
 //  @param brain
 //
 func (n *Node) OnAbort(brain IBrain) {
-	n.Log().Debug(n.String(brain) + " OnAbort")
+	n.Log().Debug(" OnAbort")
 }
 
 // OnCompositeAncestorFinished
@@ -408,7 +448,7 @@ func (n *Node) OnAbort(brain IBrain) {
 //  @param composite
 //
 func (n *Node) OnCompositeAncestorFinished(brain IBrain, composite IComposite) {
-	n.Log().Debug(n.String(brain) + " OnCompositeAncestorFinished")
+	n.Log().Debug(" OnCompositeAncestorFinished")
 }
 
 // PropertiesClassProvider

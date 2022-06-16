@@ -94,13 +94,15 @@ func (r *Root) SetRoot(root IRoot) {
 //  @receiver n
 //  @param brain
 func (r *Root) OnStart(brain IBrain) {
-	r.Decorator.OnStart(brain)
-	// 非子树要开启黑板监听
-	if !r.IsSubTree(brain) {
-		brain.Blackboard().(IBlackboardInternal).Start()
-	}
-	// 开启子节点
-	r.Decorated(brain).Start(brain)
+	// 开启子节点,保证单线程执行
+	thread.GoByID(brain.Blackboard().(IBlackboardInternal).ThreadID(), func() {
+		r.Decorator.OnStart(brain)
+		// 非子树要开启黑板监听
+		if !r.IsSubTree(brain) {
+			brain.Blackboard().(IBlackboardInternal).Start()
+		}
+		r.Decorated(brain).Start(brain)
+	})
 }
 
 // OnAbort
@@ -108,13 +110,15 @@ func (r *Root) OnStart(brain IBrain) {
 //  @receiver r
 //  @param brain
 func (r *Root) OnAbort(brain IBrain) {
-	r.Decorator.OnAbort(brain)
-	if r.IsActive(brain) {
-		r.Decorated(brain).Abort(brain)
-		return
-	}
-	// TODO 这里是否有异步异常情况未考虑
-	r.Log().Warn("can only abort active root")
+	thread.GoByID(brain.Blackboard().(IBlackboardInternal).ThreadID(), func() {
+		r.Decorator.OnAbort(brain)
+		if r.IsActive(brain) {
+			r.Decorated(brain).Abort(brain)
+			return
+		}
+		// TODO 这里是否有异步异常情况未考虑
+		r.Log().Warn("can only abort active root")
+	})
 }
 
 // OnChildFinished
@@ -156,11 +160,11 @@ func (r *Root) OnChildFinished(brain IBrain, child INode, succeeded bool) {
 //  @receiver r
 //  @param brain
 func (r *Root) SafeAbortTree(brain IBrain) {
-	if r.IsSubTree(brain) {
-		r.Log().Error("root is subtree,cannot abort", zap.String("id", r.id))
-		return
-	}
 	thread.GoByID(brain.Blackboard().(IBlackboardInternal).ThreadID(), func() {
+		if r.IsSubTree(brain) {
+			r.Log().Error("root is subtree,cannot abort", zap.String("id", r.id))
+			return
+		}
 		r.Abort(brain)
 	})
 }

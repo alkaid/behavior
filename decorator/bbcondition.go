@@ -83,6 +83,11 @@ func (c *BBCondition) StopObserving(brain bcore.IBrain) {
 //  @return bool
 // nolint
 func (c *BBCondition) ConditionMet(brain bcore.IBrain, args ...any) bool {
+	// 若委托存在,优先使用委托
+	if c.HasDelegatorOrScript() {
+		ret := c.Update(brain, bcore.EventTypeOnUpdate, 0)
+		return ret == bcore.ResultSucceeded
+	}
 	v, ok := brain.Blackboard().Get(c.BBConditionProperties().GetKey())
 	if !ok {
 		return c.BBConditionProperties().GetOperator() == bcore.OperatorIsNotSet

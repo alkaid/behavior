@@ -81,8 +81,8 @@ func (c *Condition) ConditionMet(brain bcore.IBrain, args ...any) bool {
 	if len(args) > 0 {
 		delta = args[0].(time.Duration)
 	}
-	if c.HasDelegator() {
-		ret := c.Execute(brain, bcore.EventTypeOnUpdate, delta)
+	if c.HasDelegatorOrScript() {
+		ret := c.Update(brain, bcore.EventTypeOnUpdate, delta)
 		return ret == bcore.ResultSucceeded
 	}
 	c.Log().Error("must set delegator method")

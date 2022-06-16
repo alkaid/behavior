@@ -2,6 +2,7 @@ package bcore
 
 import (
 	"reflect"
+	"time"
 )
 
 type DelegateMeta struct {
@@ -16,11 +17,27 @@ type IBrain interface {
 	// Blackboard 获取黑板
 	//  @return IBlackboard
 	Blackboard() IBlackboard
-	// OnExecute 执行委托方法，Node 框架内部调用
-	//  @param target 委托对象名
-	//  @param method 委托方法名
-	//  @param args 参数列表,注意若多个请加上...
-	//  @return []any
-	//  @return error
-	OnExecute(target string, method string, args ...any) ([]any, error)
+	// GetDelegate 获取委托
+	//  @param name
+	//  @return delegate
+	//  @return ok
+	GetDelegate(name string) (delegate any, ok bool)
+}
+
+// IBrainInternal 框架内部使用的 Brain
+type IBrainInternal interface {
+	// OnNodeUpdate 供节点回调执行委托
+	//  @receiver b
+	//  @param target
+	//  @param method
+	//  @param brain
+	//  @param eventType
+	//  @param delta
+	//  @return bcore.Result
+	OnNodeUpdate(target string, method string, brain IBrain, eventType EventType, delta time.Duration) Result
+
+	// GetDelegates 获取委托map拷贝
+	//  @receiver b
+	//  @return map[string]any
+	GetDelegates() map[string]any
 }

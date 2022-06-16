@@ -58,10 +58,11 @@ func (d *Decorator) DynamicDecorate(brain IBrain, decorated INode, abort bool) {
 //  @override Node.InitNodeWorker
 //  @receiver c
 //  @param worker
-func (d *Decorator) InitNodeWorker(worker INodeWorker) {
-	d.Node.InitNodeWorker(worker)
+func (d *Decorator) InitNodeWorker(worker INodeWorker) error {
+	err := d.Node.InitNodeWorker(worker)
 	// 强转,由框架本身保证实例化时传进来的worker是自己(自己实现了IContainerWorker接口,故强转不会panic)
 	d.IDecoratorWorker = worker.(IDecoratorWorker)
+	return err
 }
 
 // CanDynamicDecorate

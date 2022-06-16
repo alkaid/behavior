@@ -18,11 +18,11 @@ type Action struct {
 //  @param brain
 func (a *Action) OnStart(brain bcore.IBrain) {
 	a.Task.OnStart(brain)
-	if !a.HasDelegator() {
+	if !a.HasDelegatorOrScript() {
 		a.Finish(brain, false)
 		return
 	}
-	result := a.Execute(brain, bcore.EventTypeOnStart, 0)
+	result := a.Update(brain, bcore.EventTypeOnStart, 0)
 	if result != bcore.ResultInProgress {
 		a.Finish(brain, result == bcore.ResultSucceeded)
 		return
@@ -36,7 +36,7 @@ func (a *Action) OnStart(brain bcore.IBrain) {
 		currTime := time.Now()
 		delta := currTime.Sub(lastTime)
 		lastTime = currTime
-		result := a.Execute(brain, bcore.EventTypeOnUpdate, delta)
+		result := a.Update(brain, bcore.EventTypeOnUpdate, delta)
 		if result != bcore.ResultInProgress {
 			a.stopTimer(brain)
 			a.Finish(brain, result == bcore.ResultSucceeded)
@@ -52,7 +52,7 @@ func (a *Action) OnStart(brain bcore.IBrain) {
 func (a *Action) OnAbort(brain bcore.IBrain) {
 	a.Task.OnAbort(brain)
 	// 中断时最后调用一次委托
-	result := a.Execute(brain, bcore.EventTypeOnAbort, 0)
+	result := a.Update(brain, bcore.EventTypeOnAbort, 0)
 	if result == bcore.ResultInProgress {
 		a.Log().Error("action executor result cannot be ResultInProgress")
 		a.Finish(brain, false)
