@@ -23,6 +23,20 @@ type Tree struct {
 	DynamicSubtrees map[string]task.IDynamicSubtree // 所有动态子树容器
 }
 
+// Start 启动行为树,内部会派发到 bcore.IBrain 实例化时指定的线程
+//  @receiver t
+//  @param brain
+func (t *Tree) Start(brain bcore.IBrain) {
+	t.Root.Start(brain)
+}
+
+// Abort 终止树
+//  @receiver t
+//  @param brain
+func (t *Tree) Abort(brain bcore.IBrain) {
+	t.Root.Abort(brain)
+}
+
 // NodeRegistry 节点注册器
 //  用于加载行为树前保存节点实例
 type NodeRegistry struct {

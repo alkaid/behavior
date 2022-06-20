@@ -24,6 +24,10 @@ type Brain struct {
 	delegatesMeta map[string]*bcore.DelegateMeta
 }
 
+// NewBrain bcore.IBrain 实例
+//  @param blackboard
+//  @param delegates 要注册的委托对象
+//  @return bcore.IBrain
 func NewBrain(blackboard bcore.IBlackboard, delegates map[string]any) bcore.IBrain {
 	b := &Brain{
 		blackboard:    blackboard,
