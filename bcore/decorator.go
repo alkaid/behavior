@@ -1,7 +1,5 @@
 package bcore
 
-import "github.com/alkaid/behavior/thread"
-
 // IDecorator 装饰器,修饰子节点
 type IDecorator interface {
 	INode
@@ -12,11 +10,7 @@ type IDecorator interface {
 	//  @receiver d
 	//  @return INode
 	Decorated(brain IBrain) INode
-	// DynamicDecorate 运行时动态更换子节点
-	//  @param brain
-	//  @param decorated 子节点
-	//  @param abort 若在运行中是否要中断
-	DynamicDecorate(brain IBrain, decorated INode, abort bool)
+	IDecoratorWorker
 }
 
 type IDecoratorWorker interface {
@@ -33,25 +27,6 @@ type Decorator struct {
 	Container
 	IDecoratorWorker
 	decorated INode // 被装饰节点,也是子节点
-}
-
-func (d *Decorator) DynamicDecorate(brain IBrain, decorated INode, abort bool) {
-	if !d.CanDynamicDecorate() {
-		d.Log().Fatal("cannot dynamic decorate child")
-	}
-	// 保证线程安全
-	thread.GoByID(brain.Blackboard().(IBlackboardInternal).ThreadID(), func() {
-		if d.IsInactive(brain) {
-			d.Memory(brain).DynamicChild = decorated
-			decorated.DynamicMount(brain, d)
-			return
-		}
-		// 如果已经激活,需要等待子树完成或强制中断
-		d.Memory(brain).RequestDynamicChild = decorated
-		if abort && d.IsActive(brain) {
-			d.Abort(brain)
-		}
-	})
 }
 
 // InitNodeWorker
@@ -126,7 +101,7 @@ func (d *Decorator) CompositeAncestorFinished(brain IBrain, composite IComposite
 //  @param succeeded
 func (d *Decorator) Finish(brain IBrain, succeeded bool) {
 	// 动态更换子节点
-	if d.CanDynamicDecorate() && d.Memory(brain).RequestDynamicChild != nil {
+	if d.IDecoratorWorker.CanDynamicDecorate() && d.Memory(brain).RequestDynamicChild != nil {
 		d.Memory(brain).DynamicChild = d.Memory(brain).RequestDynamicChild
 		d.Memory(brain).RequestDynamicChild = nil
 		d.Memory(brain).DynamicChild.DynamicMount(brain, d)

@@ -5,18 +5,23 @@ import (
 )
 
 type ISubtreeProperties interface {
-	GetChild() string
+	GetChildID() string
+	GetChildTag() string
 	GetIsSuccessWhenNotChild() bool
 }
 
 // SubtreeProperties 子树容器属性
 type SubtreeProperties struct {
-	Child                 string `json:"child"`                 // 默认子节点ID
+	ChildID               string `json:"childID"`               // 默认子节点ID
+	ChildTag              string `json:"childTag"`              // 默认子节点Tag
 	IsSuccessWhenNotChild bool   `json:"isSuccessWhenNotChild"` // 无子节点时执行是否返回成功
 }
 
-func (s *SubtreeProperties) GetChild() string {
-	return s.Child
+func (s *SubtreeProperties) GetChildTag() string {
+	return s.ChildTag
+}
+func (s *SubtreeProperties) GetChildID() string {
+	return s.ChildID
 }
 func (s *SubtreeProperties) GetIsSuccessWhenNotChild() bool {
 	return s.IsSuccessWhenNotChild
@@ -29,6 +34,9 @@ type ISubtree interface {
 	// GetPropChildID 获取配置中的子节点ID
 	//  @return string
 	GetPropChildID() string
+	// GetPropChildTag 获取配置中的子节点Tag
+	//  @return string
+	GetPropChildTag() string
 }
 
 var _ ISubtree = (*Subtree)(nil)
@@ -99,6 +107,14 @@ func (t *Subtree) OnChildFinished(brain bcore.IBrain, child bcore.INode, succeed
 //  @implement ISubtree.GetPropChildID
 //  @receiver s
 //  @return string
-func (s *Subtree) GetPropChildID() string {
-	return s.Properties().(ISubtreeProperties).GetChild()
+func (t *Subtree) GetPropChildID() string {
+	return t.Properties().(ISubtreeProperties).GetChildID()
+}
+
+// GetPropChildTag
+//  @implement ISubtree.GetPropChildTag
+//  @receiver s
+//  @return string
+func (t *Subtree) GetPropChildTag() string {
+	return t.Properties().(ISubtreeProperties).GetChildTag()
 }

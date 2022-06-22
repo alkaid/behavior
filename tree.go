@@ -20,7 +20,7 @@ type Tree struct {
 	Ver             string
 	Tag             string
 	HaveSubtree     bool
-	DynamicSubtrees map[string]task.IDynamicSubtree // 所有动态子树容器
+	DynamicSubtrees map[string]task.IDynamicSubtree // 所有动态子树容器,key为tag
 }
 
 // Start 启动行为树,内部会派发到 bcore.IBrain 实例化时指定的线程
@@ -159,7 +159,11 @@ func (r *TreeRegistry) Load(cfg *config.TreeCfg) (*Tree, error) {
 			if node.Name() == bcore.NodeNameSubtree || node.Name() == bcore.NodeNameDynamicSubtree {
 				r.subtrees[node.ID()] = node.(task.ISubtree)
 				if node.Name() == bcore.NodeNameDynamicSubtree {
-					tree.DynamicSubtrees[node.ID()] = node.(task.IDynamicSubtree)
+					dst, ok := node.(task.IDynamicSubtree)
+					if !ok {
+						return nil, errors.New("node is not DynamicSubtree")
+					}
+					tree.DynamicSubtrees[dst.Tag()] = node.(task.IDynamicSubtree)
 				}
 				tree.HaveSubtree = true
 				continue
@@ -184,15 +188,27 @@ func (r *TreeRegistry) Load(cfg *config.TreeCfg) (*Tree, error) {
 	return tree, nil
 }
 
+// mountSubtree 遍历所有未挂载子树的子树容器,挂载子树
+//  @receiver r
+//  @return error
 func (r *TreeRegistry) mountSubtree() error {
 	for tid, subtree := range r.subtrees {
-		id := subtree.GetPropChildID()
-		root, ok := r.TreesByID[id]
-		if !ok {
-			return errors.New("root is nil")
+		var tree *Tree
+		var ok = false
+		if tag := subtree.GetPropChildTag(); tag != "" {
+			tree, ok = r.TreesByTag[tag]
 		}
-		subtree.Decorate(root.Root)
-		delete(r.subtrees, tid)
+		if id := subtree.GetPropChildID(); !ok && id != "" {
+			tree, ok = r.TreesByID[id]
+		}
+		if !ok {
+			return errors.New("tree is nil")
+		}
+		subtree.Decorate(tree.Root)
+		// 非动态子树可以删除
+		if !subtree.CanDynamicDecorate() {
+			delete(r.subtrees, tid)
+		}
 	}
 	return nil
 }

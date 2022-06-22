@@ -66,6 +66,7 @@ type NodeMemory struct {
 	DecoratedDone    bool               // 被装饰节点是否完成
 	DecoratedSuccess bool               // 被装饰节点是否成功
 	Elapsed          time.Duration      // 启动后流逝的时间
+	Restarting       bool               // 是否正在重启,是 State 为 NodeStateAborting 时的一个细分状态
 }
 
 func NewNodeMemory() *NodeMemory {

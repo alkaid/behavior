@@ -43,7 +43,7 @@ const (
 	MtFullStyle                                // 完全形态签名:(receiver) func(eventType bcore.EventType, delta time.Duration) bcore.Result
 	MtSimpleAction                             // 简单任务签名:(receiver) func()
 	MtSimpleActionWithErr                      // 简单任务带错误返回的签名:(receiver) func() error
-	MtSimpleActionWithResult                   //  简单任务带 bcore.Result 返回的签名:(receiver) func() bcore.Result
+	MtSimpleActionWithResult                   // 简单任务带 bcore.Result 返回的签名:(receiver) func() bcore.Result
 )
 
 const (

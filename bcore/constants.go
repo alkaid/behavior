@@ -64,6 +64,15 @@ const (
 	OperatorIsLte                      // 是否小于等于
 )
 
+// DynamicBehaviorMode 动态子树中断模式,描述的是装饰器动态挂载子树时若旧子树正在运行应该如何处理
+type DynamicBehaviorMode int
+
+const (
+	DynamicBehaviorModeRestart  DynamicBehaviorMode = iota // 动态挂载子树时,若正在运行则重启装饰器
+	DynamicBehaviorModeContinue                            // 动态挂载子树时，不做任何行为,即不中断正在运行的子树
+	DynamicBehaviorModeAbort                               // 态挂载子树时,若正在运行则中断装饰器
+)
+
 // 节点类别
 const (
 	CategoryComposite = "composite" // 组合节点
