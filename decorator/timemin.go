@@ -95,7 +95,8 @@ func (m *TimeMin) OnChildFinished(brain bcore.IBrain, child bcore.INode, succeed
 		return
 	}
 	if m.Memory(brain).CronTask == nil {
-		m.Log().Fatal("timer task cannot be nil")
+		m.Log().Error("timer task cannot be nil")
+		return
 	}
 }
 
@@ -107,7 +108,8 @@ func (b *TimeMin) getTaskFun(brain bcore.IBrain) func() {
 			return
 		}
 		if !b.Decorated(brain).IsActive(brain) {
-			b.Log().Fatal("decorated must be active")
+			b.Log().Error("decorated must be active")
+			return
 		}
 	}
 }

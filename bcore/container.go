@@ -59,7 +59,7 @@ func (c *Container) OnChildFinished(brain IBrain, child INode, succeeded bool) {
 //  @param succeeded
 func (c *Container) ChildFinished(brain IBrain, child INode, succeeded bool) {
 	if c.IsInactive(brain) {
-		c.Log().Fatal("A ChildID of a Container was stopped while the container was inactive!")
+		c.Log().Error("A ChildID of a Container was stopped while the container was inactive!")
 		return
 	}
 	c.IContainerWorker.OnChildFinished(brain, child, succeeded)

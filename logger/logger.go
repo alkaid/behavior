@@ -136,6 +136,10 @@ func (l *Logger) ReloadFactory(k string, onReloadeds ...func()) LoaderFactory {
 			l.SetDevelopment(c.Development)
 			l.SetLevel(c.Level)
 			l.Log.Debug("change log conf", zap.String("key", key), zap.Any("conf", c))
+			if l == Manager {
+				Log = l.Log
+				Sugar = l.Sugar
+			}
 			if len(onReloadeds) > 0 {
 				for _, reloaded := range onReloadeds {
 					reloaded()

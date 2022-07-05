@@ -101,7 +101,8 @@ func (o *ObservingDecorator) OnStart(brain IBrain) {
 func (o *ObservingDecorator) OnChildFinished(brain IBrain, child INode, succeeded bool) {
 	o.Decorator.OnChildFinished(brain, child, succeeded)
 	if o.IsInactive(brain) {
-		o.Log().Fatal("ObservingDecorator cannot be inactive")
+		o.Log().Error("ObservingDecorator cannot be inactive")
+		return
 	}
 	abortMode := o.AbortMode()
 	if abortMode == AbortModeNone || abortMode == AbortModeSelf {
@@ -161,6 +162,7 @@ func (o *ObservingDecorator) Evaluate(brain IBrain, args ...any) {
 		}
 		if parent == nil {
 			o.Log().Fatal("AbortMode is only valid when attached to a parent composite")
+			return
 		}
 		// TODO 平行节点是否要特殊限制
 		o.stopObserving(brain)

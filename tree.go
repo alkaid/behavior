@@ -24,39 +24,28 @@ type Tree struct {
 }
 
 // Start 启动行为树,内部会派发到 bcore.IBrain 实例化时指定的线程
+//  若 Root 状态错误将抛出异常,注意调用方应保证 Start 线程安全以避免 Root 状态读取时为脏数据
 //  @receiver t
 //  @param brain
-func (t *Tree) Start(brain bcore.IBrain) {
+func (t *Tree) Start(brain bcore.IBrain) error {
+	if !t.Root.IsInactive(brain) {
+		return errors.New("tree is not inactive")
+	}
 	t.Root.Start(brain)
+	return nil
 }
 
 // Abort 终止树
+//  若 Root 状态错误将抛出异常,注意调用方应保证 Abort 线程安全以避免 Root 状态读取时为脏数据
 //  @receiver t
 //  @param brain
-func (t *Tree) Abort(brain bcore.IBrain) {
-	t.Root.Abort(brain)
-}
-
-// NodeRegistry 节点注册器
-//  用于加载行为树前保存节点实例
-type NodeRegistry struct {
-	registry map[string]bcore.INode
-}
-
-func NewNodeRegistry() *NodeRegistry {
-	return &NodeRegistry{registry: make(map[string]bcore.INode)}
-}
-
-func (n *NodeRegistry) Register(node bcore.INode) {
-	_, ok := n.registry[node.ID()]
-	if ok {
-		logger.Log.Debug("node already registered", zap.String("node", node.ID()))
-		return
+func (t *Tree) Abort(brain bcore.IBrain) error {
+	if !t.Root.IsActive(brain) {
+		return errors.New("tree is not active")
 	}
-	n.registry[node.ID()] = node
+	t.Root.Abort(brain)
+	return nil
 }
-
-// TODO 只实现了加载 以后再实现卸载
 
 // TreeRegistry 行为树注册器
 type TreeRegistry struct {
@@ -79,12 +68,12 @@ func (r *TreeRegistry) LoadFromPaths(paths []string) error {
 		if err != nil {
 			return errors.WithStack(err)
 		}
-		_, err = r.LoadFromJson(string(file))
+		err = r.LoadFromJson(string(file))
 		if err != nil {
 			return err
 		}
 	}
-	err := r.mountSubtree()
+	err := r.MountSubtree()
 	if err != nil {
 		return err
 	}
@@ -93,105 +82,115 @@ func (r *TreeRegistry) LoadFromPaths(paths []string) error {
 
 func (r *TreeRegistry) LoadFromJsons(cfgJson []string) error {
 	for _, j := range cfgJson {
-		_, err := r.LoadFromJson(j)
+		err := r.LoadFromJson(j)
 		if err != nil {
 			return err
 		}
 	}
-	err := r.mountSubtree()
+	err := r.MountSubtree()
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (r *TreeRegistry) LoadFromJson(cfgJson string) (*Tree, error) {
+func (r *TreeRegistry) LoadFromJson(cfgJson string) error {
 	var cfg config.TreeCfg
 	err := json.Unmarshal([]byte(cfgJson), &cfg)
 	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-	err = cfg.Valid()
-	if err != nil {
-		return nil, err
+		return errors.WithStack(err)
 	}
 	if cfg.Ver == "" {
 		cfg.Ver = fmt.Sprintf("%x", md5.Sum([]byte(cfgJson)))
 	}
-	// 先从缓存中找
-	tree, ok := r.TreesByID[cfg.Root]
-	if ok && tree.Ver == cfg.Ver {
-		logger.Log.Debug("tree already exists", zap.String("ver", cfg.Ver), zap.String("id", cfg.Root))
-		return tree, nil
-	}
-	tree, err = r.Load(&cfg)
-	if err != nil {
-		return nil, err
-	}
-	r.TreesByID[cfg.Root] = tree
-	r.TreesByTag[tree.Tag] = tree
-	return tree, nil
+	return r.Load(&cfg)
 }
 
-func (r *TreeRegistry) Load(cfg *config.TreeCfg) (*Tree, error) {
-	tree := &Tree{
+// nolint:gocyclo
+// Load
+//  @receiver r
+//  @param cfg
+//  @return *Tree
+//  @return error
+func (r *TreeRegistry) Load(cfg *config.TreeCfg) error {
+	err := cfg.Valid()
+	if err != nil {
+		return err
+	}
+	// 先从缓存中找 id重复时返回旧树忽略加载 tag重复则加载更新
+	tree, ok := r.TreesByID[cfg.Root]
+	if ok && tree.Ver == cfg.Ver {
+		logger.Log.Warn("tree id already exists,ignore load", zap.String("ver", cfg.Ver), zap.String("tag", cfg.Tag), zap.String("id", cfg.Root))
+		return nil
+	}
+	_, ok = r.TreesByTag[cfg.Tag]
+	if ok {
+		logger.Log.Debug("tree tag already exists,will load and replace", zap.String("ver", cfg.Ver), zap.String("tag", cfg.Tag), zap.String("id", cfg.Root))
+	}
+	tree = &Tree{
 		Tag:             cfg.Tag,
 		Ver:             cfg.Ver,
 		DynamicSubtrees: map[string]task.IDynamicSubtree{},
 	}
 	nodes := map[string]bcore.INode{}
 	for _, nodeCfg := range cfg.Nodes {
-		err := nodeCfg.Valid()
+		err = nodeCfg.Valid()
 		if err != nil {
-			return nil, err
+			return err
 		}
 		node, err := globalClassLoader.New(nodeCfg.Name, nodeCfg)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		nodes[node.ID()] = node
 	}
+	tree.Root = nodes[cfg.Root].(bcore.IRoot)
 	for _, node := range nodes {
 		chidlrenIDs := cfg.Nodes[node.ID()].Children
-		switch node.Category() {
-		case bcore.CategoryDecorator:
-			// 子树容器特殊处理,暂存待依赖树全部加载完再挂载
-			if node.Name() == bcore.NodeNameSubtree || node.Name() == bcore.NodeNameDynamicSubtree {
-				r.subtrees[node.ID()] = node.(task.ISubtree)
-				if node.Name() == bcore.NodeNameDynamicSubtree {
-					dst, ok := node.(task.IDynamicSubtree)
-					if !ok {
-						return nil, errors.New("node is not DynamicSubtree")
-					}
-					tree.DynamicSubtrees[dst.Tag()] = node.(task.IDynamicSubtree)
+		// 子树容器特殊处理,暂存待依赖树全部加载完再挂载
+		if node.Name() == bcore.NodeNameSubtree || node.Name() == bcore.NodeNameDynamicSubtree {
+			r.subtrees[node.ID()] = node.(task.ISubtree)
+			tree.HaveSubtree = true
+			if node.Name() == bcore.NodeNameDynamicSubtree {
+				dst, ok := node.(task.IDynamicSubtree)
+				if !ok {
+					return errors.New("node is not DynamicSubtree")
 				}
-				tree.HaveSubtree = true
-				continue
+				tree.DynamicSubtrees[dst.Tag()] = node.(task.IDynamicSubtree)
 			}
-			if len(chidlrenIDs) != 1 {
-				return nil, errors.New("decorator can have only one child")
-			}
-			node.(bcore.IDecorator).Decorate(nodes[chidlrenIDs[0]])
+			continue
+		}
+		switch node.Category() {
 		case bcore.CategoryComposite:
 			if len(chidlrenIDs) == 0 {
-				return nil, errors.New("composite must have one child at least")
+				return errors.New("composite must have one child at least")
 			}
 			for _, id := range chidlrenIDs {
 				node.(bcore.IComposite).AddChild(nodes[id])
 			}
+		case bcore.CategoryDecorator:
+			if len(chidlrenIDs) != 1 {
+				return errors.New("decorator can have only one child")
+			}
+			node.(bcore.IDecorator).Decorate(nodes[chidlrenIDs[0]])
 		case bcore.CategoryTask:
+			// do nothing
 		default:
-			return nil, errors.New("unsupport this category:" + node.Category())
+			return errors.New("unsupport this category:" + node.Category())
 		}
 	}
-	tree.Root = nodes[cfg.Root].(bcore.IRoot)
-	return tree, nil
+	for _, node := range nodes {
+		node.SetRoot(tree.Root)
+	}
+	r.TreesByID[cfg.Root] = tree
+	r.TreesByTag[tree.Tag] = tree
+	return nil
 }
 
-// mountSubtree 遍历所有未挂载子树的子树容器,挂载子树
+// MountSubtree 遍历所有未挂载子树的子树容器,挂载子树
 //  @receiver r
 //  @return error
-func (r *TreeRegistry) mountSubtree() error {
+func (r *TreeRegistry) MountSubtree() error {
 	for tid, subtree := range r.subtrees {
 		var tree *Tree
 		var ok = false

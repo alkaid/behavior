@@ -92,7 +92,8 @@ func (n *NonParallel) OnStart(brain bcore.IBrain) {
 	n.Composite.OnStart(brain)
 	for _, child := range n.Children() {
 		if !child.IsInactive(brain) {
-			n.Log().Fatal("child must be inactive", zap.String("child", child.String(brain)))
+			n.Log().Error("child must be inactive", zap.String("child", child.String(brain)))
+			return
 		}
 	}
 	n.SetCurrIdx(brain, -1)

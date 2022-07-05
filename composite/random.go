@@ -75,7 +75,8 @@ func (r *RandomWorker) OnOrder(brain bcore.IBrain, originChildrenOrder []int) (o
 	}
 	shuffled, err := wrand.ShuffleWithWeights(realWeights)
 	if err != nil {
-		r.node.Log().Fatal("order children error", zap.Error(err))
+		r.node.Log().Error("order children error", zap.Error(err))
+		return originChildrenOrder, false
 	}
 	return shuffled, true
 }

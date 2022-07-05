@@ -100,7 +100,8 @@ func (b *TimeMax) getTaskFun(brain bcore.IBrain) func() {
 		} else {
 			b.Memory(brain).LimitReached = true
 			if !b.Decorated(brain).IsActive(brain) {
-				b.Log().Fatal("decorated must be active")
+				b.Log().Error("decorated must be active")
+				return
 			}
 		}
 	}

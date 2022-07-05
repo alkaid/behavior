@@ -277,6 +277,7 @@ func (n *Node) SetParent(parent IContainer) {
 func (n *Node) DynamicMount(brain IBrain, parent IContainer) {
 	if !n.INodeWorker.CanMounted() {
 		n.Log().Fatal("cannot mount for this node")
+		return
 	}
 	brain.Blackboard().(IBlackboardInternal).NodeMemory(n.id).MountParent = parent
 }
@@ -308,7 +309,7 @@ func (n *Node) Start(brain IBrain) {
 	// TODO debug info
 	nodeData := brain.Blackboard().(IBlackboardInternal).NodeMemory(n.id)
 	if nodeData.State != NodeStateInactive {
-		n.Log().Fatal("can only start inactive nodes")
+		n.Log().Error("can only start inactive nodes")
 		return
 	}
 	nodeData.State = NodeStateActive
@@ -323,7 +324,7 @@ func (n *Node) Start(brain IBrain) {
 func (n *Node) Abort(brain IBrain) {
 	nodeData := brain.Blackboard().(IBlackboardInternal).NodeMemory(n.id)
 	if nodeData.State != NodeStateActive {
-		n.Log().Fatal("can only abort active nodes")
+		n.Log().Error("can only abort active nodes")
 		return
 	}
 	nodeData.State = NodeStateAborting
@@ -339,7 +340,7 @@ func (n *Node) Abort(brain IBrain) {
 func (n *Node) Finish(brain IBrain, succeeded bool) {
 	nodeData := brain.Blackboard().(IBlackboardInternal).NodeMemory(n.id)
 	if nodeData.State == NodeStateInactive {
-		n.Log().Fatal("called 'Finish' while in state NodeStateInactive, something is wrong!")
+		n.Log().Error("called 'Finish' while in state NodeStateInactive, something is wrong!")
 		return
 	}
 	nodeData.State = NodeStateInactive
@@ -480,7 +481,8 @@ func (n *Node) Log() *zap.Logger {
 }
 
 func Print(node INode, brain IBrain) {
-	tree := gotree.New(node.Title())
+	nodeContent := fmt.Sprintf("%s<%d>", node.Title(), node.Memory(brain).State)
+	tree := gotree.New(nodeContent)
 	printStep(node, brain, tree)
 	fmt.Print(tree.Print())
 }

@@ -3,7 +3,6 @@ package handle
 import (
 	"fmt"
 	"reflect"
-	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -38,10 +37,11 @@ func (h *HandlerPool) Register(name string, target any) (err error) {
 		name = reflect.TypeOf(target).Name()
 	}
 	targetType := reflect.TypeOf(target)
-	handles := suitableHandlerMethods(targetType, func(s string) string {
-		// 首字母转小写
-		return strings.ToLower(s[:1]) + s[1:]
-	})
+	handles := suitableHandlerMethods(targetType, nil) // func(s string) string {
+	// 	// 首字母转小写
+	// 	return strings.ToLower(s[:1]) + s[1:]
+	// },
+
 	if len(handles) == 0 {
 		err = errors.WithStack(fmt.Errorf("target[%s] do not have delegate handles,make sure you implement the function sign: func(eventType bcore.EventType, delta time.Duration) bcore.Result", name))
 		return err

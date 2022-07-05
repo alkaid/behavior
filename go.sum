@@ -1,5 +1,5 @@
-github.com/alkaid/ants/v2 v2.4.802 h1:J/HdWveoek++H+J4jInl4d79mSrQ3ssaqAcnrondmwY=
-github.com/alkaid/ants/v2 v2.4.802/go.mod h1:l1oCaukXrp1bpSaA5RtO24ukkstGQSyb/swFqz4o2DA=
+github.com/alkaid/ants/v2 v2.5.101 h1:2X6wMcSr/b/zSsrL3ARToh8KD9YhYca6BvX2UFkOLMY=
+github.com/alkaid/ants/v2 v2.5.101/go.mod h1:cU93usDlihJZ5CfRGNDYsiBYvoilLvBF5Qp/BT2GNRE=
 github.com/alkaid/timingwheel v1.0.2 h1:S1vIahY9Umi6st3wbNkAFEiPg2yyVKnSvERPiF2dU4Q=
 github.com/alkaid/timingwheel v1.0.2/go.mod h1:t9U7gHKyUtK2EbjcCj0JEyBwEV4fV1RF7+loJZ3ufpk=
 github.com/antlr/antlr4 v0.0.0-20210105192202-5c2b686f95e1 h1:9K5yytxEEQc4yIn6c1rvQD6qQilQn9mYIF7pXKPT8i4=
@@ -35,7 +35,6 @@ github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.7.1 h1:5TQK59W5E3v0r2duFAb7P95B6hEeOyEnHRa8MjYSMTY=
-github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/thoas/go-funk v0.9.1 h1:O549iLZqPpTUQ10ykd26sZhzD+rmR5pWhuElrhbC20M=
 github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
 go.uber.org/atomic v1.7.0 h1:ADUqmZGgLDDfbSL9ZmPxKTybcoEYHgpYfELNoN+7hsw=

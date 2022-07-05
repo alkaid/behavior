@@ -4,7 +4,10 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/alkaid/behavior/thread"
+
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/alkaid/behavior/handle"
 	handle2 "github.com/alkaid/behavior/handle"
@@ -22,18 +25,41 @@ type ExecutorFun = func(eventType bcore.EventType, delta time.Duration) bcore.Re
 type Brain struct {
 	blackboard    bcore.IBlackboard
 	delegatesMeta map[string]*bcore.DelegateMeta
+	finishChan    chan *bcore.FinishEvent // 供上层业务方使用的完成通知
+	root          bcore.IRoot
+}
+
+func (b *Brain) SetFinishChan(finishChan chan *bcore.FinishEvent) {
+	b.finishChan = finishChan
+}
+
+func (b *Brain) RWFinishChan() chan *bcore.FinishEvent {
+	return b.finishChan
+}
+func (b *Brain) FinishChan() <-chan *bcore.FinishEvent {
+	return b.finishChan
+}
+func (b *Brain) RunningTree() bcore.IRoot {
+	return b.root
+}
+func (b *Brain) Running() bool {
+	return b.root != nil
+}
+func (b *Brain) SetRunningTree(root bcore.IRoot) {
+	b.root = root
 }
 
 // NewBrain bcore.IBrain 实例
 //  @param blackboard
 //  @param delegates 要注册的委托对象
 //  @return bcore.IBrain
-func NewBrain(blackboard bcore.IBlackboard, delegates map[string]any) bcore.IBrain {
+func NewBrain(blackboard bcore.IBlackboard, delegates map[string]any, finishChan chan *bcore.FinishEvent) bcore.IBrain {
 	b := &Brain{
 		blackboard:    blackboard,
 		delegatesMeta: map[string]*bcore.DelegateMeta{},
 	}
 	b.SetDelegates(delegates)
+	b.finishChan = finishChan
 	return b
 }
 
@@ -82,7 +108,48 @@ func (b *Brain) GetDelegate(name string) (delegate any, ok bool) {
 	return nil, false
 }
 
-// OnNodeUpdate 供节点回调执行委托
+func (b *Brain) Go(task func()) {
+	thread.GoByID(b.blackboard.(bcore.IBlackboardInternal).ThreadID(), task)
+}
+
+func (b *Brain) ForceRun(root bcore.IRoot) {
+	result := make(chan struct{})
+	restartChan := make(chan *bcore.FinishEvent)
+	originFinishChan := b.finishChan
+	thread.Go(func() {
+		for {
+			select {
+			case <-result:
+				return
+			case e := <-restartChan:
+				b.finishChan = originFinishChan
+				if b.finishChan != nil {
+					b.finishChan <- e
+				}
+				root.Start(b)
+				return
+			}
+		}
+	})
+	thread.GoByID(b.Blackboard().(bcore.IBlackboardInternal).ThreadID(), func() {
+		if !b.Running() {
+			root.Start(b)
+			result <- struct{}{}
+			return
+		}
+		if b.RunningTree().IsInactive(b) {
+			logger.Log.Error("brain's tree state error,cannot be inactive")
+			result <- struct{}{}
+			return
+		}
+		b.finishChan = restartChan
+		if b.RunningTree().IsActive(b) {
+			b.RunningTree().Abort(b)
+		}
+	})
+}
+
+// OnNodeUpdate 供节点回调执行委托 会在 Brain 的独立线程里运行
 //  @receiver b
 //  @param target
 //  @param method
@@ -122,8 +189,12 @@ func (b *Brain) OnNodeUpdate(target string, method string, brain bcore.IBrain, e
 		return bcore.ResultSucceeded
 	case 1:
 		// 1个时判断是error还是result
+		if rets[0] == nil {
+			return bcore.ResultSucceeded
+		}
 		if err, ok := rets[0].(error); ok {
-			log.Error("delegator method return error", zap.Error(err))
+			// 不打印堆栈,堆栈由上层业务方打印
+			log.WithOptions(zap.AddStacktrace(zapcore.FatalLevel)).Error("delegator method return error", zap.Error(err))
 			return bcore.ResultFailed
 		}
 		if result, ok := rets[0].(bcore.Result); ok {

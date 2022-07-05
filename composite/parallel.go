@@ -60,7 +60,8 @@ func (p *Parallel) OnStart(brain bcore.IBrain) {
 	}
 	for _, child := range p.Children() {
 		if !child.IsInactive(brain) {
-			p.Log().Fatal("child must be inactive", zap.String("child", child.String(brain)))
+			p.Log().Error("child must be inactive", zap.String("child", child.String(brain)))
+			return
 		}
 	}
 	for _, child := range p.Children() {
@@ -77,7 +78,8 @@ func (p *Parallel) OnAbort(brain bcore.IBrain) {
 	memory := p.PMemory(brain)
 	allChildrenStarted := len(p.Children()) == memory.RunningCount+memory.SucceededCount+memory.FailedCount
 	if !allChildrenStarted {
-		p.Log().Fatal("parallel status error", zap.Int("runningCount", memory.RunningCount), zap.Int("succeededCount", memory.SucceededCount), zap.Int("failedCount", memory.FailedCount))
+		p.Log().Error("parallel status error", zap.Int("runningCount", memory.RunningCount), zap.Int("succeededCount", memory.SucceededCount), zap.Int("failedCount", memory.FailedCount))
+		return
 	}
 	// 向下传播给当前活跃子节点
 	for _, child := range p.Children() {
@@ -124,10 +126,10 @@ func (p *Parallel) OnChildFinished(brain bcore.IBrain, child bcore.INode, succee
 		p.Finish(brain, memory.Succeeded)
 	} else if !memory.ChildrenAborted {
 		if memory.SucceededCount == len(p.Children()) {
-			p.Log().Fatal("succeeded count error")
+			p.Log().Error("succeeded count error")
 		}
 		if memory.FailedCount == len(p.Children()) {
-			p.Log().Fatal("failed count error")
+			p.Log().Error("failed count error")
 		}
 		if p.Properties().(IParallelProperties).GetFailurePolicy() == bcore.FinishModeOne && memory.FailedCount > 0 {
 			memory.Succeeded = false
@@ -152,7 +154,8 @@ func (p *Parallel) OnChildFinished(brain bcore.IBrain, child bcore.INode, succee
 //  @param childAbortBy
 func (p *Parallel) AbortLowerPriorityChildrenForChild(brain bcore.IBrain, childAbortBy bcore.INode) {
 	if !childAbortBy.IsActive(brain) {
-		p.Log().Fatal("child must be active")
+		p.Log().Error("child must be active")
+		return
 	}
 	memory := p.PMemory(brain)
 	if memory.ChildrenSucceeded[childAbortBy.ID()] {

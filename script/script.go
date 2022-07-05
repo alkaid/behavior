@@ -25,7 +25,14 @@ func InitPool(poolMinLen, poolMaxLen int, api map[string]any) error {
 	}
 	RegisterApi(api)
 	var err error
-	pool, err = engine.NewGenginePool(int64(poolMinLen), int64(poolMaxLen), engine.SortModel, "", apiLib)
+	// 实例化pool时脚本不能为空
+	codeWrap := fmt.Sprintf(`
+rule "%s"
+begin
+	%s
+end
+	`, "donothing", "")
+	pool, err = engine.NewGenginePool(int64(poolMinLen), int64(poolMaxLen), engine.SortModel, codeWrap, apiLib)
 	if err != nil {
 		return errors.WithStack(err)
 	}

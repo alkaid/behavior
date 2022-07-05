@@ -10,10 +10,16 @@ type DelegateMeta struct {
 	ReflectValue reflect.Value
 }
 
+type FinishEvent struct {
+	IsAbort   bool // 是否是终止的,false则为正常完成
+	Succeeded bool // 是否成功
+}
+
 // IBrain 大脑=行为树+记忆+委托对象集合. 也可以理解为上下文
 type IBrain interface {
-	// Tree() (*BehaviorTree, error)
-
+	// FinishChan 树运行结束的信道
+	//  @return <-chan
+	FinishChan() <-chan *FinishEvent
 	// Blackboard 获取黑板
 	//  @return IBlackboard
 	Blackboard() IBlackboard
@@ -22,6 +28,18 @@ type IBrain interface {
 	//  @return delegate
 	//  @return ok
 	GetDelegate(name string) (delegate any, ok bool)
+	// Go 在 IBrain 的独立线程里执行任务
+	//  @param task
+	Go(task func())
+	// RunningTree 正在执行的树
+	//  @return IRoot
+	RunningTree() IRoot
+	// Running 是否有正在执行的树
+	//  @return bool
+	Running() bool
+	// ForceRun 执行指定树,若已经有运行中的树则终止后再启动
+	//  @param root
+	ForceRun(root IRoot)
 }
 
 // IBrainInternal 框架内部使用的 Brain
@@ -40,4 +58,7 @@ type IBrainInternal interface {
 	//  @receiver b
 	//  @return map[string]any
 	GetDelegates() map[string]any
+	RWFinishChan() chan *FinishEvent
+	SetFinishChan(finishChan chan *FinishEvent)
+	SetRunningTree(root IRoot)
 }

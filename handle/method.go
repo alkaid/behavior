@@ -30,8 +30,8 @@ import (
 var (
 	typeOfDuration  = reflect.TypeOf(time.Duration(0))
 	typeOfEventType = reflect.TypeOf(bcore.EventType(0))
-	typeOfBrain     = reflect.TypeOf((*bcore.IBrain)(nil)).Elem()
 	typeOfResult    = reflect.TypeOf(bcore.Result(0))
+	typeOfBrain     = reflect.TypeOf((*bcore.IBrain)(nil)).Elem()
 	typeOfError     = reflect.TypeOf((*error)(nil)).Elem()
 )
 
@@ -61,20 +61,20 @@ func isHandlerMethod(method reflect.Method) MethodType {
 	}
 	// 需要4个入参: receiver,Brain EventType, delta
 	if mt.NumIn() == numInFullStyle {
-		if t1 := mt.In(1); !t1.Implements(typeOfBrain) {
+		if t1 := mt.In(1); t1.Kind() != reflect.Interface || !t1.Implements(typeOfBrain) {
 			return MtNone
 		}
-		if t1 := mt.In(2); !t1.Implements(typeOfEventType) {
+		if t1 := mt.In(2); t1 != typeOfEventType {
 			return MtNone
 		}
-		if t1 := mt.In(3); !t1.Implements(typeOfDuration) {
+		if t1 := mt.In(3); t1 != typeOfDuration {
 			return MtNone
 		}
 		// 需要1个出参: Result,error
 		if mt.NumOut() != numOutFullStyle {
 			return MtNone
 		}
-		if t1 := mt.Out(0); !t1.Implements(typeOfResult) {
+		if t1 := mt.Out(0); t1 != typeOfResult {
 			return MtNone
 		}
 		return MtFullStyle
@@ -87,11 +87,11 @@ func isHandlerMethod(method reflect.Method) MethodType {
 		}
 		// 需要1个出参 bcore.Result 或 error
 		if mt.NumOut() == 1 {
-			t1 := mt.Out(1)
-			if t1.Implements(typeOfResult) {
+			t1 := mt.Out(0)
+			if t1 == typeOfResult {
 				return MtSimpleActionWithResult
 			}
-			if t1.Implements(typeOfError) {
+			if t1.Kind() == reflect.Interface && t1.Implements(typeOfError) {
 				return MtSimpleActionWithErr
 			}
 		}
