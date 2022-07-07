@@ -10,17 +10,17 @@ require (
 	github.com/matoous/go-nanoid v1.5.0
 	github.com/panjf2000/ants/v2 v2.5.0
 	github.com/pkg/errors v0.9.1
-	github.com/samber/lo v1.21.0
+	github.com/samber/lo v1.25.0
 	go.uber.org/zap v1.21.0
 )
 
 require (
-	github.com/antlr/antlr4 v0.0.0-20210105192202-5c2b686f95e1 // indirect
+	github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20220626175859-9abda183db8e // indirect
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3 // indirect
 	github.com/google/martian v2.1.0+incompatible // indirect
-	go.uber.org/atomic v1.7.0 // indirect
-	go.uber.org/multierr v1.6.0 // indirect
-	golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17 // indirect
+	go.uber.org/atomic v1.9.0 // indirect
+	go.uber.org/multierr v1.8.0 // indirect
+	golang.org/x/exp v0.0.0-20220706164943-b4a6d9510983 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 )
 

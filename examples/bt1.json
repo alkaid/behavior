@@ -1,0 +1,751 @@
+{
+    "root": "3bNAvYqyRBvbzJKHTan2FM",
+    "nodes": {
+        "967bdOh+sxM9KlAevht538cE52B8": {
+            "id": "967bdOh+sxM9KlAevht538cE52B8",
+            "name": "BBCooldown",
+            "title": "BBCooldown",
+            "category": "decorator",
+            "children": [
+                "9077d0u5FRBeIOjvGUzCY0/499C4"
+            ],
+            "properties": {
+                "key": ""
+            },
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "30abbPs1ktNBKh96yn8dwj20A63C": {
+            "id": "30abbPs1ktNBKh96yn8dwj20A63C",
+            "name": "BBCondition",
+            "title": "BBCondition",
+            "category": "decorator",
+            "children": [
+                "75cc8VxtEFJBqygaU9tRUb14FD80"
+            ],
+            "properties": {
+                "operator": 0,
+                "key": "",
+                "value": "",
+                "abortMode": 2
+            },
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "75cc8VxtEFJBqygaU9tRUb14FD80": {
+            "id": "75cc8VxtEFJBqygaU9tRUb14FD80",
+            "name": "Condition",
+            "title": "Condition",
+            "category": "decorator",
+            "children": [
+                "967bdOh+sxM9KlAevht538c75C3B"
+            ],
+            "properties": {
+                "interval": "",
+                "randomDeviation": "",
+                "abortMode": 0
+            },
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "967bdOh+sxM9KlAevht538c75C3B": {
+            "id": "967bdOh+sxM9KlAevht538c75C3B",
+            "name": "BBCooldown",
+            "title": "BBCooldown",
+            "category": "decorator",
+            "children": [
+                "a0780tZ5XxDFKJeu8JWRN7UE861E"
+            ],
+            "properties": {
+                "key": ""
+            },
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "a0780tZ5XxDFKJeu8JWRN7UE861E": {
+            "id": "a0780tZ5XxDFKJeu8JWRN7UE861E",
+            "name": "BBEntries",
+            "title": "BBEntries",
+            "category": "decorator",
+            "children": [
+                "ae3669T4BxEIrnD1dTcWHua3AA41"
+            ],
+            "properties": {
+                "operator": 0,
+                "keys": [],
+                "query": "",
+                "abortMode": 0
+            },
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "ae3669T4BxEIrnD1dTcWHua3AA41": {
+            "id": "ae3669T4BxEIrnD1dTcWHua3AA41",
+            "name": "Cooldown",
+            "title": "Cooldown",
+            "category": "decorator",
+            "children": [
+                "e2364xTKjRNxJyW03k6F4x48BF58"
+            ],
+            "properties": {
+                "cooldownTime": ""
+            },
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "e2364xTKjRNxJyW03k6F4x48BF58": {
+            "id": "e2364xTKjRNxJyW03k6F4x48BF58",
+            "name": "Failure",
+            "title": "Failure",
+            "category": "decorator",
+            "children": [
+                "2410608QNhBB4iWbsS15hYpF5F82"
+            ],
+            "properties": {},
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "2410608QNhBB4iWbsS15hYpF5F82": {
+            "id": "2410608QNhBB4iWbsS15hYpF5F82",
+            "name": "Inverter",
+            "title": "Inverter",
+            "category": "decorator",
+            "children": [
+                "ebe04UIv7ZDoZmJ6QanTNuQ57DD2"
+            ],
+            "properties": {},
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "ebe04UIv7ZDoZmJ6QanTNuQ57DD2": {
+            "id": "ebe04UIv7ZDoZmJ6QanTNuQ57DD2",
+            "name": "Random",
+            "title": "Random",
+            "category": "decorator",
+            "children": [
+                "c5c0cpdvsxCrZHDjcjTOnU27B794"
+            ],
+            "properties": {
+                "probability": 0
+            },
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "c5c0cpdvsxCrZHDjcjTOnU27B794": {
+            "id": "c5c0cpdvsxCrZHDjcjTOnU27B794",
+            "name": "Repeater",
+            "title": "Repeater",
+            "category": "decorator",
+            "children": [
+                "bfc337GZiFHa6LmtDp4VmsA839A6"
+            ],
+            "properties": {
+                "times": 0
+            },
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "bfc337GZiFHa6LmtDp4VmsA839A6": {
+            "id": "bfc337GZiFHa6LmtDp4VmsA839A6",
+            "name": "Succeeded",
+            "title": "Succeeded",
+            "category": "decorator",
+            "children": [
+                "7bb4f2XaKFGJ5BV9Oorn3lF46697"
+            ],
+            "properties": {},
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "7bb4f2XaKFGJ5BV9Oorn3lF46697": {
+            "id": "7bb4f2XaKFGJ5BV9Oorn3lF46697",
+            "name": "TimeMax",
+            "title": "TimeMax",
+            "category": "decorator",
+            "children": [
+                "17cb8BSRDNHA749xmRD2gvk39F29"
+            ],
+            "properties": {
+                "waitForChildButFail": false,
+                "limit": "",
+                "randomDeviation": ""
+            },
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "17cb8BSRDNHA749xmRD2gvk39F29": {
+            "id": "17cb8BSRDNHA749xmRD2gvk39F29",
+            "name": "TimeMin",
+            "title": "TimeMin",
+            "category": "decorator",
+            "children": [
+                "49d0dEwP/9HVa6LAz14iWSjCBB5B"
+            ],
+            "properties": {
+                "limit": "",
+                "randomDeviation": "",
+                "finishOnChildFailure": false
+            },
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "9077d0u5FRBeIOjvGUzCY0/499C4": {
+            "id": "9077d0u5FRBeIOjvGUzCY0/499C4",
+            "name": "RandomSelector",
+            "title": "RandomSelector",
+            "category": "selector",
+            "children": [
+                "30abbPs1ktNBKh96yn8dwj20A63C",
+                "967bdOh+sxM9KlAevht538cD322F",
+                "a0780tZ5XxDFKJeu8JWRN7U57BD5"
+            ],
+            "properties": {},
+            "delegator": {
+                "target": "sdfds",
+                "method": "",
+                "script": ""
+            }
+        },
+        "49d0dEwP/9HVa6LAz14iWSjCBB5B": {
+            "id": "49d0dEwP/9HVa6LAz14iWSjCBB5B",
+            "name": "WaitCondition",
+            "title": "WaitCondition",
+            "category": "decorator",
+            "children": [
+                "5079abwxjdEsqzHB9JkyYp336536"
+            ],
+            "properties": {
+                "interval": "",
+                "randomDeviation": "",
+                "abortMode": 0
+            },
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "5079abwxjdEsqzHB9JkyYp336536": {
+            "id": "5079abwxjdEsqzHB9JkyYp336536",
+            "name": "RandomSequence",
+            "title": "RandomSequence",
+            "category": "sequence",
+            "children": [
+                "7bb4f2XaKFGJ5BV9Oorn3lF5E3FE",
+                "41117jGIlBFAqQNKNuApT287A961",
+                "c1106os1qVMUp8XmuX12d+21C118",
+                "9077d0u5FRBeIOjvGUzCY0/A98A3",
+                "5079abwxjdEsqzHB9JkyYp3AD76A",
+                "b80d6ydKHFHN4mYTCfFeFDD6BCC2",
+                "becf7thI19O2K973s5Yb7xn83057",
+                "30cb8td52JK8YdKaNeuPfm79A2A4",
+                "05f6djYn2pOQ5r0h9lEccYA15AF5"
+            ],
+            "properties": {},
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "7bb4f2XaKFGJ5BV9Oorn3lF5E3FE": {
+            "id": "7bb4f2XaKFGJ5BV9Oorn3lF5E3FE",
+            "name": "TimeMax",
+            "title": "TimeMax",
+            "category": "decorator",
+            "children": [
+                "41117jGIlBFAqQNKNuApT28C37F5"
+            ],
+            "properties": {
+                "waitForChildButFail": false,
+                "limit": "",
+                "randomDeviation": "1ms"
+            },
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "41117jGIlBFAqQNKNuApT28C37F5": {
+            "id": "41117jGIlBFAqQNKNuApT28C37F5",
+            "name": "Parallel",
+            "title": "Parallel",
+            "category": "parallel",
+            "children": [
+                "30cb8td52JK8YdKaNeuPfm7B2B06",
+                "05f6djYn2pOQ5r0h9lEccYA0E122",
+                "7b31bA4RbVH+a1I+FH0l887BA827"
+            ],
+            "properties": {
+                "successPolicy": 1,
+                "failurePolicy": 1
+            },
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "30cb8td52JK8YdKaNeuPfm7B2B06": {
+            "id": "30cb8td52JK8YdKaNeuPfm7B2B06",
+            "name": "Aciton",
+            "title": "Aciton",
+            "category": "task",
+            "children": [],
+            "properties": {},
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": "its a script \"jsudif\""
+            }
+        },
+        "05f6djYn2pOQ5r0h9lEccYA0E122": {
+            "id": "05f6djYn2pOQ5r0h9lEccYA0E122",
+            "name": "Wait",
+            "title": "Wait",
+            "category": "task",
+            "children": [],
+            "properties": {
+                "waitTime": "123",
+                "randomDeviation": "123",
+                "forever": false
+            },
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": "its a script \"jsudif\""
+            }
+        },
+        "7b31bA4RbVH+a1I+FH0l887BA827": {
+            "id": "7b31bA4RbVH+a1I+FH0l887BA827",
+            "name": "WaitBB",
+            "title": "WaitBB",
+            "category": "task",
+            "children": [],
+            "properties": {
+                "waitTime": "",
+                "randomDeviation": ""
+            },
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "41117jGIlBFAqQNKNuApT287A961": {
+            "id": "41117jGIlBFAqQNKNuApT287A961",
+            "name": "Parallel",
+            "title": "Parallel",
+            "category": "parallel",
+            "children": [
+                "30cb8td52JK8YdKaNeuPfm7453B1"
+            ],
+            "properties": {
+                "successPolicy": 1,
+                "failurePolicy": 1
+            },
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "30cb8td52JK8YdKaNeuPfm7453B1": {
+            "id": "30cb8td52JK8YdKaNeuPfm7453B1",
+            "name": "Aciton",
+            "title": "Aciton",
+            "category": "task",
+            "children": [],
+            "properties": {},
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "c1106os1qVMUp8XmuX12d+21C118": {
+            "id": "c1106os1qVMUp8XmuX12d+21C118",
+            "name": "Service",
+            "title": "Service",
+            "category": "service",
+            "children": [
+                "41117jGIlBFAqQNKNuApT283694A"
+            ],
+            "properties": {
+                "interval": "",
+                "randomDeviation": ""
+            },
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "41117jGIlBFAqQNKNuApT283694A": {
+            "id": "41117jGIlBFAqQNKNuApT283694A",
+            "name": "Parallel",
+            "title": "Parallel",
+            "category": "parallel",
+            "children": [
+                "30cb8td52JK8YdKaNeuPfm74AEF1"
+            ],
+            "properties": {
+                "successPolicy": 1,
+                "failurePolicy": 1
+            },
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "30cb8td52JK8YdKaNeuPfm74AEF1": {
+            "id": "30cb8td52JK8YdKaNeuPfm74AEF1",
+            "name": "Aciton",
+            "title": "Aciton",
+            "category": "task",
+            "children": [],
+            "properties": {},
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "9077d0u5FRBeIOjvGUzCY0/A98A3": {
+            "id": "9077d0u5FRBeIOjvGUzCY0/A98A3",
+            "name": "RandomSelector",
+            "title": "RandomSelector",
+            "category": "selector",
+            "children": [
+                "30cb8td52JK8YdKaNeuPfm7CB7D7"
+            ],
+            "properties": {},
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "30cb8td52JK8YdKaNeuPfm7CB7D7": {
+            "id": "30cb8td52JK8YdKaNeuPfm7CB7D7",
+            "name": "Aciton",
+            "title": "Aciton",
+            "category": "task",
+            "children": [],
+            "properties": {},
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "5079abwxjdEsqzHB9JkyYp3AD76A": {
+            "id": "5079abwxjdEsqzHB9JkyYp3AD76A",
+            "name": "RandomSequence",
+            "title": "RandomSequence",
+            "category": "sequence",
+            "children": [
+                "05f6djYn2pOQ5r0h9lEccYABD07D"
+            ],
+            "properties": {},
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "05f6djYn2pOQ5r0h9lEccYABD07D": {
+            "id": "05f6djYn2pOQ5r0h9lEccYABD07D",
+            "name": "Wait",
+            "title": "Wait",
+            "category": "task",
+            "children": [],
+            "properties": {
+                "waitTime": "",
+                "randomDeviation": "",
+                "forever": false
+            },
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "b80d6ydKHFHN4mYTCfFeFDD6BCC2": {
+            "id": "b80d6ydKHFHN4mYTCfFeFDD6BCC2",
+            "name": "Selector",
+            "title": "Selector",
+            "category": "selector",
+            "children": [
+                "05f6djYn2pOQ5r0h9lEccYA9A7A8"
+            ],
+            "properties": {},
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "05f6djYn2pOQ5r0h9lEccYA9A7A8": {
+            "id": "05f6djYn2pOQ5r0h9lEccYA9A7A8",
+            "name": "Wait",
+            "title": "Wait",
+            "category": "task",
+            "children": [],
+            "properties": {
+                "waitTime": "",
+                "randomDeviation": "",
+                "forever": false
+            },
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "becf7thI19O2K973s5Yb7xn83057": {
+            "id": "becf7thI19O2K973s5Yb7xn83057",
+            "name": "Sequence",
+            "title": "Sequence",
+            "category": "sequence",
+            "children": [
+                "05f6djYn2pOQ5r0h9lEccYAB95F5"
+            ],
+            "properties": {},
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "05f6djYn2pOQ5r0h9lEccYAB95F5": {
+            "id": "05f6djYn2pOQ5r0h9lEccYAB95F5",
+            "name": "Wait",
+            "title": "Wait",
+            "category": "task",
+            "children": [],
+            "properties": {
+                "waitTime": "",
+                "randomDeviation": "",
+                "forever": false
+            },
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "30cb8td52JK8YdKaNeuPfm79A2A4": {
+            "id": "30cb8td52JK8YdKaNeuPfm79A2A4",
+            "name": "Aciton",
+            "title": "Aciton",
+            "category": "task",
+            "children": [],
+            "properties": {},
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "05f6djYn2pOQ5r0h9lEccYA15AF5": {
+            "id": "05f6djYn2pOQ5r0h9lEccYA15AF5",
+            "name": "Wait",
+            "title": "Wait",
+            "category": "task",
+            "children": [],
+            "properties": {
+                "waitTime": "",
+                "randomDeviation": "",
+                "forever": false
+            },
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "967bdOh+sxM9KlAevht538cD322F": {
+            "id": "967bdOh+sxM9KlAevht538cD322F",
+            "name": "BBCooldown",
+            "title": "BBCooldown",
+            "category": "decorator",
+            "children": [
+                "b80d6ydKHFHN4mYTCfFeFDDE10A3"
+            ],
+            "properties": {
+                "key": "cooktime"
+            },
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "b80d6ydKHFHN4mYTCfFeFDDE10A3": {
+            "id": "b80d6ydKHFHN4mYTCfFeFDDE10A3",
+            "name": "Selector",
+            "title": "Selector",
+            "category": "selector",
+            "children": [
+                "ae3669T4BxEIrnD1dTcWHua0668E"
+            ],
+            "properties": {},
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "ae3669T4BxEIrnD1dTcWHua0668E": {
+            "id": "ae3669T4BxEIrnD1dTcWHua0668E",
+            "name": "Cooldown",
+            "title": "Cooldown",
+            "category": "decorator",
+            "children": [
+                "30cb8td52JK8YdKaNeuPfm7D3BD9"
+            ],
+            "properties": {
+                "cooldownTime": ""
+            },
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "30cb8td52JK8YdKaNeuPfm7D3BD9": {
+            "id": "30cb8td52JK8YdKaNeuPfm7D3BD9",
+            "name": "Aciton",
+            "title": "Aciton",
+            "category": "task",
+            "children": [],
+            "properties": {},
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "a0780tZ5XxDFKJeu8JWRN7U57BD5": {
+            "id": "a0780tZ5XxDFKJeu8JWRN7U57BD5",
+            "name": "BBEntries",
+            "title": "BBEntries",
+            "category": "decorator",
+            "children": [
+                "becf7thI19O2K973s5Yb7xnD0E9F"
+            ],
+            "properties": {
+                "operator": 2,
+                "keys": [],
+                "query": "",
+                "abortMode": 3
+            },
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "becf7thI19O2K973s5Yb7xnD0E9F": {
+            "id": "becf7thI19O2K973s5Yb7xnD0E9F",
+            "name": "Sequence",
+            "title": "Sequence",
+            "category": "sequence",
+            "children": [
+                "c5c0cpdvsxCrZHDjcjTOnU2D9E4F"
+            ],
+            "properties": {},
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "c5c0cpdvsxCrZHDjcjTOnU2D9E4F": {
+            "id": "c5c0cpdvsxCrZHDjcjTOnU2D9E4F",
+            "name": "Repeater",
+            "title": "Repeater",
+            "category": "decorator",
+            "children": [
+                "30cb8td52JK8YdKaNeuPfm715395"
+            ],
+            "properties": {
+                "times": 10000
+            },
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "30cb8td52JK8YdKaNeuPfm715395": {
+            "id": "30cb8td52JK8YdKaNeuPfm715395",
+            "name": "Aciton",
+            "title": "Aciton",
+            "category": "task",
+            "children": [],
+            "properties": {},
+            "delegator": {
+                "target": "",
+                "method": "",
+                "script": ""
+            }
+        },
+        "3bNAvYqyRBvbzJKHTan2FM": {
+            "id": "3bNAvYqyRBvbzJKHTan2FM",
+            "name": "Root",
+            "category": "decorator",
+            "title": "Root",
+            "properties": {
+                "once": false,
+                "interval": "0ms"
+            },
+            "delegator": {},
+            "children": [
+                "967bdOh+sxM9KlAevht538cE52B8"
+            ]
+        }
+    }
+}
