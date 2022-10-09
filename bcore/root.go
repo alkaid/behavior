@@ -48,18 +48,20 @@ type Root struct {
 }
 
 // CanMounted
-//  @override Node.CanMounted
-//  @receiver r
-//  @return bool
+//
+//	@override Node.CanMounted
+//	@receiver r
+//	@return bool
 func (r *Root) CanMounted() bool {
 	return true
 }
 
 // IsSubTree
-//  @implement IRoot.IsSubTree
-//  @receiver r
-//  @param brain
-//  @return bool
+//
+//	@implement IRoot.IsSubTree
+//	@receiver r
+//	@param brain
+//	@return bool
 func (r *Root) IsSubTree(brain IBrain) bool {
 	// 父节点不为空就是子树
 	return r.Parent(brain) != nil
@@ -71,31 +73,33 @@ func (r *Root) Interval() time.Duration {
 }
 
 // PropertiesClassProvider
-//  @implement INodeWorker.PropertiesClassProvider
-//  @receiver n
-//  @return any
+//
+//	@implement INodeWorker.PropertiesClassProvider
+//	@receiver n
+//	@return any
 func (r *Root) PropertiesClassProvider() any {
 	return &rootProperties{}
 }
 
 // SetRoot
-//  @override Decorator.SetRoot
-//  @receiver n
-//  @param root
-func (r *Root) SetRoot(root IRoot) {
+//
+//	@override Decorator.SetRoot
+//	@receiver n
+//	@param root
+func (r *Root) SetRoot(brain IBrain, root IRoot) {
 	if root.ID() != r.ID() {
-		r.Log().Fatal("root's root must be self", zap.String("selfID", r.ID()), zap.String("inID", root.ID()))
+		r.Log(brain).Fatal("root's root must be self", zap.String("selfID", r.ID()), zap.String("inID", root.ID()))
 		return
 	}
-	r.Decorator.SetRoot(root)
+	r.Decorator.SetRoot(brain, root)
 }
 
 // Start 启动行为树.
-// 	覆写父类方法以保证线程安全
-//  @implement INode.Start
-//  @receiver n
-//  @param brain
 //
+//		覆写父类方法以保证线程安全
+//	 @implement INode.Start
+//	 @receiver n
+//	 @param brain
 func (r *Root) Start(brain IBrain) {
 	thread.GoByID(brain.Blackboard().(IBlackboardInternal).ThreadID(), func() {
 		if r.IsSubTree(brain) {
@@ -108,9 +112,10 @@ func (r *Root) Start(brain IBrain) {
 }
 
 // OnStart
-//  @override Node.OnStart
-//  @receiver n
-//  @param brain
+//
+//	@override Node.OnStart
+//	@receiver n
+//	@param brain
 func (r *Root) OnStart(brain IBrain) {
 	r.Decorator.OnStart(brain)
 	// 非子树要开启黑板监听
@@ -121,11 +126,11 @@ func (r *Root) OnStart(brain IBrain) {
 }
 
 // Abort 终止行为树
-// 	覆写父类方法以保证线程安全
-//  @implement INode.Abort
-//  @receiver n
-//  @param brain
 //
+//		覆写父类方法以保证线程安全
+//	 @implement INode.Abort
+//	 @receiver n
+//	 @param brain
 func (r *Root) Abort(brain IBrain) {
 	thread.GoByID(brain.Blackboard().(IBlackboardInternal).ThreadID(), func() {
 		if r.IsSubTree(brain) {
@@ -137,9 +142,10 @@ func (r *Root) Abort(brain IBrain) {
 }
 
 // OnAbort
-//  @override Node.OnAbort
-//  @receiver r
-//  @param brain
+//
+//	@override Node.OnAbort
+//	@receiver r
+//	@param brain
 func (r *Root) OnAbort(brain IBrain) {
 	r.Decorator.OnAbort(brain)
 	if r.IsActive(brain) {
@@ -147,15 +153,16 @@ func (r *Root) OnAbort(brain IBrain) {
 		return
 	}
 	// TODO 这里是否有异步异常情况未考虑
-	r.Log().Warn("can only abort active root")
+	r.Log(brain).Warn("can only abort active root")
 }
 
 // OnChildFinished
-//  @override Container.OnChildFinished
-//  @receiver r
-//  @param brain
-//  @param child
-//  @param succeeded
+//
+//	@override Container.OnChildFinished
+//	@receiver r
+//	@param brain
+//	@param child
+//	@param succeeded
 func (r *Root) OnChildFinished(brain IBrain, child INode, succeeded bool) {
 	r.Decorator.OnChildFinished(brain, child, succeeded)
 	// 如果是外部触发中断的,结束运行
@@ -186,10 +193,11 @@ func (r *Root) OnChildFinished(brain IBrain, child INode, succeeded bool) {
 }
 
 // Finish
-//  @override Node.Finish
-//  @receiver d
-//  @param brain
-//  @param succeeded
+//
+//	@override Node.Finish
+//	@receiver d
+//	@param brain
+//	@param succeeded
 func (r *Root) Finish(brain IBrain, succeeded bool) {
 	isAborting := r.IsAborting(brain)
 	r.Decorator.Finish(brain, succeeded)

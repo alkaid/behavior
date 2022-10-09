@@ -32,30 +32,33 @@ func (s *ServiceProperties) GetRandomDeviation() time.Duration {
 }
 
 // Service 服务.
-//  节点通常连接至合成（Composite）节点或任务（Task）节点，只要其分支被执行，它们就会以定义的频率执行。
-//  这些节点常用于检查和更新黑板。它们取代了其他行为树系统中的传统平行（Parallel）节点。
+//
+//	节点通常连接至合成（Composite）节点或任务（Task）节点，只要其分支被执行，它们就会以定义的频率执行。
+//	这些节点常用于检查和更新黑板。它们取代了其他行为树系统中的传统平行（Parallel）节点。
 type Service struct {
 	bcore.Decorator
 }
 
 // PropertiesClassProvider
-//  @implement INodeWorker.PropertiesClassProvider
-//  @receiver n
-//  @return any
+//
+//	@implement INodeWorker.PropertiesClassProvider
+//	@receiver n
+//	@return any
 func (s *Service) PropertiesClassProvider() any {
 	return &ServiceProperties{}
 }
 
 // OnStart
-//  @override bcore.Decorator .OnStart
-//  @receiver s
-//  @param brain
+//
+//	@override bcore.Decorator .OnStart
+//	@receiver s
+//	@param brain
 func (s *Service) OnStart(brain bcore.IBrain) {
 	s.Decorator.OnStart(brain)
 	interval := s.Properties().(IServiceProperties).GetInterval()
 	randomDeviation := s.Properties().(IServiceProperties).GetRandomDeviation()
 	if interval <= 0 {
-		interval = s.Root().Interval()
+		interval = s.Root(brain).Interval()
 	}
 	lastTime := time.Now()
 	s.stopTimer(brain)
@@ -71,11 +74,12 @@ func (s *Service) OnStart(brain bcore.IBrain) {
 }
 
 // OnChildFinished
-//  @override bcore.Decorator .OnChildFinished
-//  @receiver s
-//  @param brain
-//  @param child
-//  @param succeeded
+//
+//	@override bcore.Decorator .OnChildFinished
+//	@receiver s
+//	@param brain
+//	@param child
+//	@param succeeded
 func (s *Service) OnChildFinished(brain bcore.IBrain, child bcore.INode, succeeded bool) {
 	s.Decorator.OnChildFinished(brain, child, succeeded)
 	s.stopTimer(brain)

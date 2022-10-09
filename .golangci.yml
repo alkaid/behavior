@@ -1,4 +1,4 @@
-# 详细用法参考 https://github.com/golangci/golangci-lint/blob/master/.golangci.example.yml
+# 详细用法参考 https://github.com/golangci/golangci-lint/blob/master/.golangci.reference.yml
 
 linters-settings:
   depguard:
@@ -75,8 +75,8 @@ linters-settings:
       - copylocks
       - deepequalerrors
       - errorsas
-#      - 对自动生成的代码不友好,一些需要按顺序生成的字段执行对齐后业务逻辑会错误(比如goctl model),而且会删除注释 坑
-#      - fieldalignment
+      #      - 对自动生成的代码不友好,一些需要按顺序生成的字段执行对齐后业务逻辑会错误(比如goctl model),而且会删除注释 坑
+      #      - fieldalignment
       - findcall
       - framepointer
       - httpresponse
@@ -85,7 +85,7 @@ linters-settings:
       - lostcancel
       - nilfunc
       # disable for go 1.18->https://github.com/golangci/golangci-lint/issues/2649
-#      - nilness
+      #      - nilness
       - printf
       - reflectvaluecompare
       - shadow
@@ -102,7 +102,7 @@ linters-settings:
       - unsafeptr
       - unusedresult
       # disable for go 1.18->https://github.com/golangci/golangci-lint/issues/2649
-#      - unusedwrite
+  #      - unusedwrite
   lll:
     line-length: 200
   misspell:
@@ -112,19 +112,47 @@ linters-settings:
     allow-unused: false # report any unused nolint directives
     require-explanation: false # don't require an explanation for nolint directives
     require-specific: false # don't require nolint directives to be specific about which linter is being skipped
+  wrapcheck:
+    # An array of strings that specify substrings of signatures to ignore.
+    # If this set, it will override the default set of ignored signatures.
+    # See https://github.com/tomarrell/wrapcheck#configuration for more information.
+    # Default: [".Errorf(", "errors.New(", "errors.Unwrap(", ".Wrap(", ".Wrapf(", ".WithMessage(", ".WithMessagef(", ".WithStack("]
+    ignoreSigs:
+      - .Errorf(
+      - errors.New(
+      - errors.Unwrap(
+      - .Wrap(
+      - .Wrapf(
+      - .WithMessage(
+      - .WithMessagef(
+      - .WithStack(
+    # An array of strings that specify regular expressions of signatures to ignore.
+    # Default: []
+    ignoreSigRegexps:
+      - \.New.*Error\(
+      - \.NewWithStack\(
+      - \.WithStack\(
+    # An array of strings that specify globs of packages to ignore.
+    # Default: []
+    ignorePackageGlobs:
+      - encoding/*
+      - github.com/pkg/*
+    # An array of strings that specify regular expressions of interfaces to ignore.
+    # Default: []
+    ignoreInterfaceRegexps:
+      - ^(?i)c(?-i)ach(ing|e)
 
 linters:
   disable-all: true
   enable:
     - bodyclose
-    - deadcode
     - depguard
     - dogsled
     - dupl
     - errcheck
     - exportloopref
     - funlen
-#    - gochecknoinits
+    #    - gochecknoinits
     - goconst
     - gocritic
     - gocyclo
@@ -142,14 +170,24 @@ linters:
     - noctx
     - nolintlint
     - staticcheck
-    - structcheck
-#    - stylecheck
+    #    - stylecheck
     - typecheck
     - unconvert
-    - unparam
+    #    - unparam
     - unused
-    - varcheck
     - whitespace
+    # 下个版本logrlint将改名为loggercheck
+    - logrlint
+    #    - loggercheck
+    - reassign
+    - usestdlibvars
+    - errname
+    #    - contextcheck
+    - asasalint
+    - errorlint
+    - makezero
+    - nilerr
+  #    - wrapcheck
 
   # don't enable:
   # - asciicheck
@@ -199,6 +237,6 @@ run:
   timeout: 5m
   skip-dirs:
     - temp
-#    - model是自动生成的代码 不校验
+    #    - model是自动生成的代码 不校验
     - fx/data/model
     - protos

@@ -35,15 +35,17 @@ func (t TimeMinProperties) GetFinishOnChildFailure() bool {
 }
 
 // TimeMin 最小时限装饰器
-//  限制子节点至少须执行xx时限
+//
+//	限制子节点至少须执行xx时限
 type TimeMin struct {
 	bcore.Decorator
 }
 
 // PropertiesClassProvider
-//  @implement INodeWorker.PropertiesClassProvider
-//  @receiver n
-//  @return any
+//
+//	@implement INodeWorker.PropertiesClassProvider
+//	@receiver n
+//	@return any
 func (m *TimeMin) PropertiesClassProvider() any {
 	return &TimeMinProperties{}
 }
@@ -52,9 +54,10 @@ func (m *TimeMin) TimeMinProperties() ITimeMinProperties {
 }
 
 // OnStart
-//  @override Node.OnStart
-//  @receiver n
-//  @param brain
+//
+//	@override Node.OnStart
+//	@receiver n
+//	@param brain
 func (m *TimeMin) OnStart(brain bcore.IBrain) {
 	m.Decorator.OnStart(brain)
 	m.Memory(brain).LimitReached = false
@@ -65,9 +68,10 @@ func (m *TimeMin) OnStart(brain bcore.IBrain) {
 }
 
 // OnAbort
-//  @override Node.OnAbort
-//  @receiver n
-//  @param brain
+//
+//	@override Node.OnAbort
+//	@receiver n
+//	@param brain
 func (m *TimeMin) OnAbort(brain bcore.IBrain) {
 	m.Decorator.OnAbort(brain)
 	m.stopTimer(brain)
@@ -80,11 +84,12 @@ func (m *TimeMin) OnAbort(brain bcore.IBrain) {
 }
 
 // OnChildFinished
-//  @override bcore.Decorator .OnChildFinished
-//  @receiver s
-//  @param brain
-//  @param child
-//  @param succeeded
+//
+//	@override bcore.Decorator .OnChildFinished
+//	@receiver s
+//	@param brain
+//	@param child
+//	@param succeeded
 func (m *TimeMin) OnChildFinished(brain bcore.IBrain, child bcore.INode, succeeded bool) {
 	m.Decorator.OnChildFinished(brain, child, succeeded)
 	m.Memory(brain).DecoratedDone = true
@@ -95,7 +100,7 @@ func (m *TimeMin) OnChildFinished(brain bcore.IBrain, child bcore.INode, succeed
 		return
 	}
 	if m.Memory(brain).CronTask == nil {
-		m.Log().Error("timer task cannot be nil")
+		m.Log(brain).Error("timer task cannot be nil")
 		return
 	}
 }
@@ -108,7 +113,7 @@ func (b *TimeMin) getTaskFun(brain bcore.IBrain) func() {
 			return
 		}
 		if !b.Decorated(brain).IsActive(brain) {
-			b.Log().Error("decorated must be active")
+			b.Log(brain).Error("decorated must be active")
 			return
 		}
 	}

@@ -8,14 +8,41 @@ import (
 	"github.com/alkaid/timingwheel"
 )
 
+// type IActionProperties interface {
+// 	GetIsExeOnAbort() bool
+// }
+//
+// // ActionProperties 子树容器属性
+// type ActionProperties struct {
+// 	IsExeOnAbort bool `json:"isExeOnAbort"` // 被中断时是否执行一次委托
+// }
+//
+// func (s *ActionProperties) GetIsExeOnAbort() bool {
+// 	return s.IsExeOnAbort
+// }
+
 type Action struct {
 	bcore.Task
 }
 
+// // PropertiesClassProvider
+// //
+// //	@implement INodeWorker.PropertiesClassProvider
+// //	@receiver n
+// //	@return any
+// func (a *Action) PropertiesClassProvider() any {
+// 	return &ActionProperties{}
+// }
+//
+// func (a *Action) ActionProperties() IActionProperties {
+// 	return a.Properties().(IActionProperties)
+// }
+
 // OnStart
-//  @override Node.OnStart
-//  @receiver n
-//  @param brain
+//
+//	@override Node.OnStart
+//	@receiver n
+//	@param brain
 func (a *Action) OnStart(brain bcore.IBrain) {
 	a.Task.OnStart(brain)
 	if !a.HasDelegatorOrScript() {
@@ -28,7 +55,7 @@ func (a *Action) OnStart(brain bcore.IBrain) {
 		return
 	}
 	// 按root节点时钟频率定时调用
-	interval := a.Root().Interval()
+	interval := a.Root(brain).Interval()
 	a.stopTimer(brain)
 	lastTime := time.Now()
 	// 默认投递到黑板保存的线程ID
@@ -46,15 +73,16 @@ func (a *Action) OnStart(brain bcore.IBrain) {
 }
 
 // OnAbort
-//  @override Node.OnAbort
-//  @receiver n
-//  @param brain
+//
+//	@override Node.OnAbort
+//	@receiver n
+//	@param brain
 func (a *Action) OnAbort(brain bcore.IBrain) {
 	a.Task.OnAbort(brain)
 	// 中断时最后调用一次委托
 	result := a.Update(brain, bcore.EventTypeOnAbort, 0)
 	if result == bcore.ResultInProgress {
-		a.Log().Error("action executor result cannot be ResultInProgress")
+		a.Log(brain).Error("action executor result cannot be ResultInProgress")
 		a.Finish(brain, false)
 		return
 	}

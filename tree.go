@@ -24,9 +24,10 @@ type Tree struct {
 }
 
 // Start 启动行为树,内部会派发到 bcore.IBrain 实例化时指定的线程
-//  若 Root 状态错误将抛出异常,注意调用方应保证 Start 线程安全以避免 Root 状态读取时为脏数据
-//  @receiver t
-//  @param brain
+//
+//	若 Root 状态错误将抛出异常,注意调用方应保证 Start 线程安全以避免 Root 状态读取时为脏数据
+//	@receiver t
+//	@param brain
 func (t *Tree) Start(brain bcore.IBrain) error {
 	if !t.Root.IsInactive(brain) {
 		return errors.New("tree is not inactive")
@@ -36,9 +37,10 @@ func (t *Tree) Start(brain bcore.IBrain) error {
 }
 
 // Abort 终止树
-//  若 Root 状态错误将抛出异常,注意调用方应保证 Abort 线程安全以避免 Root 状态读取时为脏数据
-//  @receiver t
-//  @param brain
+//
+//	若 Root 状态错误将抛出异常,注意调用方应保证 Abort 线程安全以避免 Root 状态读取时为脏数据
+//	@receiver t
+//	@param brain
 func (t *Tree) Abort(brain bcore.IBrain) error {
 	if !t.Root.IsActive(brain) {
 		return errors.New("tree is not active")
@@ -106,12 +108,14 @@ func (r *TreeRegistry) LoadFromJson(cfgJson string) error {
 	return r.Load(&cfg)
 }
 
-// nolint:gocyclo
 // Load
-//  @receiver r
-//  @param cfg
-//  @return *Tree
-//  @return error
+//
+//	@receiver r
+//	@param cfg
+//	@return *Tree
+//	@return error
+//
+//nolint:gocyclo
 func (r *TreeRegistry) Load(cfg *config.TreeCfg) error {
 	err := cfg.Valid()
 	if err != nil {
@@ -180,7 +184,7 @@ func (r *TreeRegistry) Load(cfg *config.TreeCfg) error {
 		}
 	}
 	for _, node := range nodes {
-		node.SetRoot(tree.Root)
+		node.SetRoot(nil, tree.Root)
 	}
 	r.TreesByID[cfg.Root] = tree
 	r.TreesByTag[tree.Tag] = tree
@@ -188,8 +192,9 @@ func (r *TreeRegistry) Load(cfg *config.TreeCfg) error {
 }
 
 // MountSubtree 遍历所有未挂载子树的子树容器,挂载子树
-//  @receiver r
-//  @return error
+//
+//	@receiver r
+//	@return error
 func (r *TreeRegistry) MountSubtree() error {
 	for tid, subtree := range r.subtrees {
 		var tree *Tree
@@ -200,10 +205,12 @@ func (r *TreeRegistry) MountSubtree() error {
 		if id := subtree.GetPropChildID(); !ok && id != "" {
 			tree, ok = r.TreesByID[id]
 		}
-		if !ok {
+		if !ok && !subtree.CanDynamicDecorate() {
 			return errors.New("tree is nil")
 		}
-		subtree.Decorate(tree.Root)
+		if ok {
+			subtree.Decorate(tree.Root)
+		}
 		// 非动态子树可以删除
 		if !subtree.CanDynamicDecorate() {
 			delete(r.subtrees, tid)

@@ -23,17 +23,19 @@ var _ IContainer = (*Container)(nil)
 var _ IContainerWorker = (*Container)(nil)
 
 // Container 容器基类
-//  @implement IContainer
-//  @implement IContainerWorker
+//
+//	@implement IContainer
+//	@implement IContainerWorker
 type Container struct {
 	Node
 	IContainerWorker
 }
 
 // InitNodeWorker
-//  @override Node.InitNodeWorker
-//  @receiver c
-//  @param worker
+//
+//	@override Node.InitNodeWorker
+//	@receiver c
+//	@param worker
 func (c *Container) InitNodeWorker(worker INodeWorker) error {
 	err := c.Node.InitNodeWorker(worker)
 	// 强转,由框架本身保证实例化时传进来的worker是自己(自己实现了IContainerWorker接口,故强转不会panic)
@@ -42,24 +44,26 @@ func (c *Container) InitNodeWorker(worker INodeWorker) error {
 }
 
 // OnChildFinished
-//  @implement IContainerWorker.OnChildFinished
-//  @receiver c
-//  @param brain
-//  @param child
-//  @param succeeded
+//
+//	@implement IContainerWorker.OnChildFinished
+//	@receiver c
+//	@param brain
+//	@param child
+//	@param succeeded
 func (c *Container) OnChildFinished(brain IBrain, child INode, succeeded bool) {
-	c.Log().Debug(c.String(brain) + " OnChildFinished")
+	c.Log(brain).Debug(c.String(brain) + " OnChildFinished")
 }
 
 // ChildFinished
-//  @implement IContainer.ChildFinished
-//  @receiver c
-//  @param brain
-//  @param child
-//  @param succeeded
+//
+//	@implement IContainer.ChildFinished
+//	@receiver c
+//	@param brain
+//	@param child
+//	@param succeeded
 func (c *Container) ChildFinished(brain IBrain, child INode, succeeded bool) {
 	if c.IsInactive(brain) {
-		c.Log().Error("A ChildID of a Container was stopped while the container was inactive!")
+		c.Log(brain).Error("A ChildID of a Container was stopped while the container was inactive!")
 		return
 	}
 	c.IContainerWorker.OnChildFinished(brain, child, succeeded)

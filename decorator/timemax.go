@@ -36,15 +36,17 @@ func (t TimeMaxProperties) GetWaitForChildButFail() bool {
 }
 
 // TimeMax 最大时限装饰器
-//  限制最大时限内必须返回结果
+//
+//	限制最大时限内必须返回结果
 type TimeMax struct {
 	bcore.Decorator
 }
 
 // PropertiesClassProvider
-//  @implement INodeWorker.PropertiesClassProvider
-//  @receiver n
-//  @return any
+//
+//	@implement INodeWorker.PropertiesClassProvider
+//	@receiver n
+//	@return any
 func (m *TimeMax) PropertiesClassProvider() any {
 	return &TimeMaxProperties{}
 }
@@ -53,9 +55,10 @@ func (m *TimeMax) TimeMaxProperties() ITimeMaxProperties {
 }
 
 // OnStart
-//  @override Node.OnStart
-//  @receiver n
-//  @param brain
+//
+//	@override Node.OnStart
+//	@receiver n
+//	@param brain
 func (m *TimeMax) OnStart(brain bcore.IBrain) {
 	m.Decorator.OnStart(brain)
 	m.Memory(brain).LimitReached = false
@@ -64,9 +67,10 @@ func (m *TimeMax) OnStart(brain bcore.IBrain) {
 }
 
 // OnAbort
-//  @override Node.OnAbort
-//  @receiver n
-//  @param brain
+//
+//	@override Node.OnAbort
+//	@receiver n
+//	@param brain
 func (m *TimeMax) OnAbort(brain bcore.IBrain) {
 	m.Decorator.OnAbort(brain)
 	m.stopTimer(brain)
@@ -78,11 +82,12 @@ func (m *TimeMax) OnAbort(brain bcore.IBrain) {
 }
 
 // OnChildFinished
-//  @override bcore.Decorator .OnChildFinished
-//  @receiver s
-//  @param brain
-//  @param child
-//  @param succeeded
+//
+//	@override bcore.Decorator .OnChildFinished
+//	@receiver s
+//	@param brain
+//	@param child
+//	@param succeeded
 func (m *TimeMax) OnChildFinished(brain bcore.IBrain, child bcore.INode, succeeded bool) {
 	m.Decorator.OnChildFinished(brain, child, succeeded)
 	m.stopTimer(brain)
@@ -100,7 +105,7 @@ func (b *TimeMax) getTaskFun(brain bcore.IBrain) func() {
 		} else {
 			b.Memory(brain).LimitReached = true
 			if !b.Decorated(brain).IsActive(brain) {
-				b.Log().Error("decorated must be active")
+				b.Log(brain).Error("decorated must be active")
 				return
 			}
 		}

@@ -15,16 +15,17 @@ func (o *ObservingProperties) GetAbortMode() AbortMode {
 }
 
 // ObservingDecorator 观察者装饰器,实现了对条件的监听,和条件变化时的各种中断模式
-//                 节点处于启用状态且条件不再被满足：
-//                        Stops.NONE： 无
-//                        Stops.SELF： 中断当前节点
-//                        Stops.LOWER_PRIORITY： 无
-//                        Stops.BOTH： 中断当前节点
-//                节点处于停用状态且条件被满足时：
-//                        Stops.NONE： 无
-//                        Stops.SELF： 无
-//                        Stops.LOWER_PRIORITY： 关闭当前启用的分支，启动此分支
-//                        Stops.BOTH： 关闭当前启用的分支，启动此分支
+//
+//	 节点处于启用状态且条件不再被满足：
+//	        Stops.NONE： 无
+//	        Stops.SELF： 中断当前节点
+//	        Stops.LOWER_PRIORITY： 无
+//	        Stops.BOTH： 中断当前节点
+//	节点处于停用状态且条件被满足时：
+//	        Stops.NONE： 无
+//	        Stops.SELF： 无
+//	        Stops.LOWER_PRIORITY： 关闭当前启用的分支，启动此分支
+//	        Stops.BOTH： 关闭当前启用的分支，启动此分支
 type ObservingDecorator struct {
 	Decorator
 	IObservingWorker
@@ -48,9 +49,10 @@ type IObservingWorker interface {
 var _ IObservingWorker = (*ObservingDecorator)(nil)
 
 // InitNodeWorker
-//  @override Node.InitNodeWorker
-//  @receiver c
-//  @param worker
+//
+//	@override Node.InitNodeWorker
+//	@receiver c
+//	@param worker
 func (o *ObservingDecorator) InitNodeWorker(worker INodeWorker) error {
 	err := o.Decorator.InitNodeWorker(worker)
 	// 强转,由框架本身保证实例化时传进来的worker是自己(自己实现了IContainerWorker接口,故强转不会panic)
@@ -59,24 +61,27 @@ func (o *ObservingDecorator) InitNodeWorker(worker INodeWorker) error {
 }
 
 // AbortMode 中断模式
-//  @receiver o
-//  @return AbortMode
+//
+//	@receiver o
+//	@return AbortMode
 func (o *ObservingDecorator) AbortMode() AbortMode {
 	return o.properties.(IObservingProperties).GetAbortMode()
 }
 
 // PropertiesClassProvider
-//  @implement INodeWorker.PropertiesClassProvider
-//  @receiver n
-//  @return any
+//
+//	@implement INodeWorker.PropertiesClassProvider
+//	@receiver n
+//	@return any
 func (o *ObservingDecorator) PropertiesClassProvider() any {
 	return &ObservingProperties{}
 }
 
 // OnStart
-//  @override Node.OnStart
-//  @receiver n
-//  @param brain
+//
+//	@override Node.OnStart
+//	@receiver n
+//	@param brain
 func (o *ObservingDecorator) OnStart(brain IBrain) {
 	o.Decorator.OnStart(brain)
 	if o.AbortMode() != AbortModeNone {
@@ -92,16 +97,27 @@ func (o *ObservingDecorator) OnStart(brain IBrain) {
 	}
 }
 
+// OnAbort
+//
+//	@override Node.OnAbort
+//	@receiver n
+//	@param brain
+func (o *ObservingDecorator) OnAbort(brain IBrain) {
+	o.Decorator.OnAbort(brain)
+	o.Decorated(brain).Abort(brain)
+}
+
 // OnChildFinished
-//  @override Container.OnChildFinished
-//  @receiver r
-//  @param brain
-//  @param child
-//  @param succeeded
+//
+//	@override Container.OnChildFinished
+//	@receiver r
+//	@param brain
+//	@param child
+//	@param succeeded
 func (o *ObservingDecorator) OnChildFinished(brain IBrain, child INode, succeeded bool) {
 	o.Decorator.OnChildFinished(brain, child, succeeded)
 	if o.IsInactive(brain) {
-		o.Log().Error("ObservingDecorator cannot be inactive")
+		o.Log(brain).Error("ObservingDecorator cannot be inactive")
 		return
 	}
 	abortMode := o.AbortMode()
@@ -119,20 +135,21 @@ func (o *ObservingDecorator) stopObserving(brain IBrain) {
 }
 
 // OnCompositeAncestorFinished
-//  @override Node.OnCompositeAncestorFinished
-//  @receiver n
-//  @param brain
-//  @param composite
 //
+//	@override Node.OnCompositeAncestorFinished
+//	@receiver n
+//	@param brain
+//	@param composite
 func (o *ObservingDecorator) OnCompositeAncestorFinished(brain IBrain, composite IComposite) {
 	o.Decorator.OnCompositeAncestorFinished(brain, composite)
 	o.stopObserving(brain)
 }
 
 // Evaluate 根据节点状态和条件满足来评估后续中断流程
-//  @receiver o
-//  @param brain
-//  @param args... 透传参数,原样传递给 ConditionMet
+//
+//	@receiver o
+//	@param brain
+//	@param args... 透传参数,原样传递给 ConditionMet
 func (o *ObservingDecorator) Evaluate(brain IBrain, args ...any) {
 	conditionMet := o.IObservingWorker.ConditionMet(brain, args...)
 	mode := o.AbortMode()
@@ -149,7 +166,7 @@ func (o *ObservingDecorator) Evaluate(brain IBrain, args ...any) {
 			return
 		}
 		parent := o.Parent(brain)
-		var child INode = o
+		var child = o.NodeWorkerAsNode()
 		var composite IComposite
 		for {
 			var ok bool
@@ -161,7 +178,7 @@ func (o *ObservingDecorator) Evaluate(brain IBrain, args ...any) {
 			parent = parent.Parent(brain)
 		}
 		if parent == nil {
-			o.Log().Fatal("AbortMode is only valid when attached to a parent composite")
+			o.Log(brain).Fatal("AbortMode is only valid when attached to a parent composite")
 			return
 		}
 		// TODO 平行节点是否要特殊限制
@@ -172,26 +189,29 @@ func (o *ObservingDecorator) Evaluate(brain IBrain, args ...any) {
 }
 
 // StartObserving
-//  @implement IObservingWorker.StartObserving
-//  @receiver o
-//  @param brain
+//
+//	@implement IObservingWorker.StartObserving
+//	@receiver o
+//	@param brain
 func (o *ObservingDecorator) StartObserving(brain IBrain) {
-	o.Log().Debug(o.String(brain) + " StartObserving")
+	o.Log(brain).Debug(o.String(brain) + " StartObserving")
 }
 
 // StopObserving
-//  @implement IObservingWorker.StopObserving
-//  @receiver o
-//  @param brain
+//
+//	@implement IObservingWorker.StopObserving
+//	@receiver o
+//	@param brain
 func (o *ObservingDecorator) StopObserving(brain IBrain) {
-	o.Log().Debug(o.String(brain) + " StartObserving")
+	o.Log(brain).Debug(o.String(brain) + " StopObserving")
 }
 
 // ConditionMet panic
-//  @receiver o
-//  @param brain
-//  @param args
-//  @return bool
+//
+//	@receiver o
+//	@param brain
+//	@param args
+//	@return bool
 func (o *ObservingDecorator) ConditionMet(brain IBrain, args ...any) bool {
 	return false
 }

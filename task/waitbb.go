@@ -33,15 +33,17 @@ func (w *WaitBBProperties) GetRandomDeviation() time.Duration {
 }
 
 // WaitBB 等待黑板时间
-//  与 等待 WaitBB 任务节点的原理类似，但该节点会拉取等待时间黑板值。
+//
+//	与 等待 WaitBB 任务节点的原理类似，但该节点会拉取等待时间黑板值。
 type WaitBB struct {
 	bcore.Task
 }
 
 // PropertiesClassProvider
-//  @implement INodeWorker.PropertiesClassProvider
-//  @receiver n
-//  @return any
+//
+//	@implement INodeWorker.PropertiesClassProvider
+//	@receiver n
+//	@return any
 func (w *WaitBB) PropertiesClassProvider() any {
 	return &WaitBBProperties{}
 }
@@ -50,15 +52,16 @@ func (w *WaitBB) WaitBBProperties() IWaitBBProperties {
 }
 
 // OnStart
-//  @override Node.OnStart
-//  @receiver n
-//  @param brain
+//
+//	@override Node.OnStart
+//	@receiver n
+//	@param brain
 func (w *WaitBB) OnStart(brain bcore.IBrain) {
 	w.Task.OnStart(brain)
 	w.Memory(brain).Elapsed = 0
 	delay, ok := brain.Blackboard().GetDuration(w.WaitBBProperties().GetKey())
 	if !ok {
-		w.Log().Error("not found wait time in blackboard", zap.String("key", w.WaitBBProperties().GetKey()))
+		w.Log(brain).Error("not found wait time in blackboard", zap.String("key", w.WaitBBProperties().GetKey()))
 		// 取值失败则默认为不等待
 		w.Finish(brain, true)
 	}
@@ -68,9 +71,10 @@ func (w *WaitBB) OnStart(brain bcore.IBrain) {
 }
 
 // OnAbort
-//  @override Node.OnAbort
-//  @receiver n
-//  @param brain
+//
+//	@override Node.OnAbort
+//	@receiver n
+//	@param brain
 func (w *WaitBB) OnAbort(brain bcore.IBrain) {
 	w.Task.OnAbort(brain)
 	w.stopTimer(brain)

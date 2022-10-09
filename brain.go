@@ -50,9 +50,10 @@ func (b *Brain) SetRunningTree(root bcore.IRoot) {
 }
 
 // NewBrain bcore.IBrain 实例
-//  @param blackboard
-//  @param delegates 要注册的委托对象
-//  @return bcore.IBrain
+//
+//	@param blackboard
+//	@param delegates 要注册的委托对象
+//	@return bcore.IBrain
 func NewBrain(blackboard bcore.IBlackboard, delegates map[string]any, finishChan chan *bcore.FinishEvent) bcore.IBrain {
 	b := &Brain{
 		blackboard:    blackboard,
@@ -68,9 +69,10 @@ func (b *Brain) Blackboard() bcore.IBlackboard {
 }
 
 // RegisterDelegate 注册委托对象
-//  @receiver b
-//  @param name
-//  @param delegate
+//
+//	@receiver b
+//	@param name
+//	@param delegate
 func (b *Brain) RegisterDelegate(name string, delegate any) {
 	if delegate == nil {
 		logger.Log.Fatal("delegate can't be nil")
@@ -82,8 +84,9 @@ func (b *Brain) RegisterDelegate(name string, delegate any) {
 }
 
 // SetDelegates 注册委托对象
-//  @receiver b
-//  @param delegatesMeta
+//
+//	@receiver b
+//	@param delegatesMeta
 func (b *Brain) SetDelegates(delegates map[string]any) {
 	for name, d := range delegates {
 		b.RegisterDelegate(name, d)
@@ -91,8 +94,9 @@ func (b *Brain) SetDelegates(delegates map[string]any) {
 }
 
 // GetDelegates 获取委托map拷贝
-//  @receiver b
-//  @return map[string]any
+//
+//	@receiver b
+//	@return map[string]any
 func (b *Brain) GetDelegates() map[string]any {
 	delegates := map[string]any{}
 	for name, meta := range b.delegatesMeta {
@@ -113,13 +117,13 @@ func (b *Brain) Go(task func()) {
 }
 
 func (b *Brain) ForceRun(root bcore.IRoot) {
-	result := make(chan struct{})
+	notEnableChan := make(chan struct{})
 	restartChan := make(chan *bcore.FinishEvent)
 	originFinishChan := b.finishChan
 	thread.Go(func() {
 		for {
 			select {
-			case <-result:
+			case <-notEnableChan:
 				return
 			case e := <-restartChan:
 				b.finishChan = originFinishChan
@@ -134,29 +138,31 @@ func (b *Brain) ForceRun(root bcore.IRoot) {
 	thread.GoByID(b.Blackboard().(bcore.IBlackboardInternal).ThreadID(), func() {
 		if !b.Running() {
 			root.Start(b)
-			result <- struct{}{}
+			notEnableChan <- struct{}{}
 			return
 		}
 		if b.RunningTree().IsInactive(b) {
 			logger.Log.Error("brain's tree state error,cannot be inactive")
-			result <- struct{}{}
+			notEnableChan <- struct{}{}
 			return
 		}
 		b.finishChan = restartChan
 		if b.RunningTree().IsActive(b) {
+			// tree finish时会通知 brain.finishChan
 			b.RunningTree().Abort(b)
 		}
 	})
 }
 
 // OnNodeUpdate 供节点回调执行委托 会在 Brain 的独立线程里运行
-//  @receiver b
-//  @param target
-//  @param method
-//  @param brain
-//  @param eventType
-//  @param delta
-//  @return bcore.Result
+//
+//	@receiver b
+//	@param target
+//	@param method
+//	@param brain
+//	@param eventType
+//	@param delta
+//	@return bcore.Result
 func (b *Brain) OnNodeUpdate(target string, method string, brain bcore.IBrain, eventType bcore.EventType, delta time.Duration) bcore.Result {
 	log := logger.Log.With(zap.String("target", target), zap.String("method", method), zap.Int("eventType", int(eventType)))
 	meta := b.delegatesMeta[target]

@@ -42,15 +42,17 @@ func (b *BBEntriesProperties) GetQuery() string {
 }
 
 // BBEntries 比较黑板条目（Compare BBEntries）
-//  节点将比较多个 黑板键 的值，并根据结果（等于或不等）阻止或允许节点的执行。
+//
+//	节点将比较多个 黑板键 的值，并根据结果（等于或不等）阻止或允许节点的执行。
 type BBEntries struct {
 	bcore.ObservingDecorator
 }
 
 // PropertiesClassProvider
-//  @implement INodeWorker.PropertiesClassProvider
-//  @receiver n
-//  @return any
+//
+//	@implement INodeWorker.PropertiesClassProvider
+//	@receiver n
+//	@return any
 func (e *BBEntries) PropertiesClassProvider() any {
 	return &BBEntriesProperties{}
 }
@@ -60,9 +62,10 @@ func (e *BBEntries) BBEntriesProperties() IBBEntriesProperties {
 }
 
 // StartObserving
-//  @override bcore.ObservingDecorator .StartObserving
-//  @receiver o
-//  @param brain
+//
+//	@override bcore.ObservingDecorator .StartObserving
+//	@receiver o
+//	@param brain
 func (e *BBEntries) StartObserving(brain bcore.IBrain) {
 	e.ObservingDecorator.StartObserving(brain)
 	for _, key := range e.BBEntriesProperties().GetKeys() {
@@ -71,9 +74,10 @@ func (e *BBEntries) StartObserving(brain bcore.IBrain) {
 }
 
 // StopObserving
-//  @override bcore.ObservingDecorator .StopObserving
-//  @receiver o
-//  @param brain
+//
+//	@override bcore.ObservingDecorator .StopObserving
+//	@receiver o
+//	@param brain
 func (e *BBEntries) StopObserving(brain bcore.IBrain) {
 	e.ObservingDecorator.StopObserving(brain)
 	for _, key := range e.BBEntriesProperties().GetKeys() {
@@ -83,11 +87,12 @@ func (e *BBEntries) StopObserving(brain bcore.IBrain) {
 }
 
 // ConditionMet
-//  @implement bcore.IObservingWorker .ConditionMet
-//  @receiver o
-//  @param brain
-//  @param args
-//  @return bool
+//
+//	@implement bcore.IObservingWorker .ConditionMet
+//	@receiver o
+//	@param brain
+//	@param args
+//	@return bool
 func (e *BBEntries) ConditionMet(brain bcore.IBrain, args ...any) bool {
 	// 若委托存在,优先使用委托
 	if e.HasDelegatorOrScript() {
@@ -113,7 +118,7 @@ func (e *BBEntries) ConditionMet(brain bcore.IBrain, args ...any) bool {
 	case BBEntriesOpNotEqual:
 		return !allEqual
 	}
-	e.Log().Error("not support operator", zap.Int("operator", int(e.BBEntriesProperties().GetOperator())))
+	e.Log(brain).Error("not support operator", zap.Int("operator", int(e.BBEntriesProperties().GetOperator())))
 	return false
 }
 

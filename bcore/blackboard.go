@@ -2,6 +2,7 @@ package bcore
 
 import (
 	stderr "errors"
+	"reflect"
 	"sync"
 	"time"
 
@@ -30,12 +31,13 @@ const (
 type Observer func(op OpType, key string, oldValue any, newValue any)
 
 // Blackboard
-//  @implement IBlackboard
-//  @implement IBlackboardInternal
-//  get和set为线程安全,其他方法均为非线程安全,请在树自己的线程内调用
-//  黑板的[生命周期调用,监听添加移除,监听函数的执行]必须派发到AI独立线程
-//  黑板的kv读写可以在任意线程
-//  黑板为树形结构,实例化时可指定父黑板,将继承父黑板的KV.父黑板,一般来说是AI集群的共享黑板。想实现AI间通信时这将很有用.
+//
+//	@implement IBlackboard
+//	@implement IBlackboardInternal
+//	get和set为线程安全,其他方法均为非线程安全,请在树自己的线程内调用
+//	黑板的[生命周期调用,监听添加移除,监听函数的执行]必须派发到AI独立线程
+//	黑板的kv读写可以在任意线程
+//	黑板为树形结构,实例化时可指定父黑板,将继承父黑板的KV.父黑板,一般来说是AI集群的共享黑板。想实现AI间通信时这将很有用.
 type Blackboard struct {
 	memoryMutex sync.Mutex
 	threadID    int                    // 监听函数执行的线程ID
@@ -53,11 +55,11 @@ func (b *Blackboard) ThreadID() int {
 }
 
 // TreeMemory
-//  @implement IBlackboardInternal.TreeMemory
-//  @receiver b
-//  @param rootID
-//  @return Memory
 //
+//	@implement IBlackboardInternal.TreeMemory
+//	@receiver b
+//	@param rootID
+//	@return Memory
 func (b *Blackboard) TreeMemory(rootID string) Memory {
 	mem, ok := b.treesMemory[rootID]
 	if !ok {
@@ -68,21 +70,21 @@ func (b *Blackboard) TreeMemory(rootID string) Memory {
 }
 
 // NodeExt
-//  @implement IBlackboardInternal.NodeExt
-//  @receiver b
-//  @param nodeID
-//  @return Memory
 //
+//	@implement IBlackboardInternal.NodeExt
+//	@receiver b
+//	@param nodeID
+//	@return Memory
 func (b *Blackboard) NodeExt(nodeID string) Memory {
 	return b.NodeMemory(nodeID).Ext
 }
 
 // NodeMemory
-//  @implement IBlackboardInternal.NodeMemory
-//  @receiver b
-//  @param nodeID
-//  @return *NodeMemory
 //
+//	@implement IBlackboardInternal.NodeMemory
+//	@receiver b
+//	@param nodeID
+//	@return *NodeMemory
 func (b *Blackboard) NodeMemory(nodeID string) *NodeMemory {
 	mem, ok := b.nodesData[nodeID]
 	if !ok {
@@ -93,9 +95,10 @@ func (b *Blackboard) NodeMemory(nodeID string) *NodeMemory {
 }
 
 // NewBlackboard 实例化一个黑板
-//  @param threadID AI工作线程ID
-//  @param parent 父黑板,一般来说是AI集群的共享黑板
-//  @return *Blackboard
+//
+//	@param threadID AI工作线程ID
+//	@param parent 父黑板,一般来说是AI集群的共享黑板
+//	@return *Blackboard
 func NewBlackboard(threadID int, parent *Blackboard) *Blackboard {
 	if threadID <= 0 {
 		logger.Log.Fatal("threadID cannot <=0")
@@ -113,9 +116,9 @@ func NewBlackboard(threadID int, parent *Blackboard) *Blackboard {
 }
 
 // Start
-//  @implement IBlackboardInternal.Start
-//  @receiver b
 //
+//	@implement IBlackboardInternal.Start
+//	@receiver b
 func (b *Blackboard) Start() {
 	if b.enable {
 		logger.Log.Warn("blackboard already stared")
@@ -128,9 +131,9 @@ func (b *Blackboard) Start() {
 }
 
 // Stop
-//  @implement IBlackboardInternal.Stop
-//  @receiver b
 //
+//	@implement IBlackboardInternal.Stop
+//	@receiver b
 func (b *Blackboard) Stop() {
 	if !b.enable {
 		logger.Log.Warn("blackboard already stopped")
@@ -143,29 +146,31 @@ func (b *Blackboard) Stop() {
 }
 
 // AddObserver
-//  @implement IBlackboardInternal.AddObserver
-//  @receiver b
-//  @param key
-//  @param observer
+//
+//	@implement IBlackboardInternal.AddObserver
+//	@receiver b
+//	@param key
+//	@param observer
 func (b *Blackboard) AddObserver(key string, observer Observer) {
 	b.addOrRmObserver(true, key, observer)
 }
 
 // RemoveObserver
-//  @implement IBlackboardInternal.RemoveObserver
-//  @receiver b
-//  @param key
-//  @param observer
+//
+//	@implement IBlackboardInternal.RemoveObserver
+//	@receiver b
+//	@param key
+//	@param observer
 func (b *Blackboard) RemoveObserver(key string, observer Observer) {
 	b.addOrRmObserver(false, key, observer)
 }
 
 // addOrRmObserver
-//  @receiver b
-//  @param add
-//  @param key
-//  @param observer
 //
+//	@receiver b
+//	@param add
+//	@param key
+//	@param observer
 func (b *Blackboard) addOrRmObserver(add bool, key string, observer Observer) {
 	// 无论调用方是否在AI线程里,都兜底派发到AI线程,避免和监听函数并行
 	thread.GoByID(b.threadID, func() {
@@ -175,33 +180,35 @@ func (b *Blackboard) addOrRmObserver(add bool, key string, observer Observer) {
 			observers = make([]Observer, 0)
 			b.observers[key] = observers
 		} else {
-			contains = lo.ContainsBy(observers, func(v Observer) bool { return &v == &observer })
+			observerPtr := reflect.ValueOf(observer).Pointer()
+			contains = lo.ContainsBy(observers, func(v Observer) bool { return observerPtr == reflect.ValueOf(v).Pointer() })
 		}
 		if !add {
 			if contains {
+				observerPtr := reflect.ValueOf(observer).Pointer()
 				b.observers[key] = lo.DropWhile(observers, func(v Observer) bool {
-					return &v == &observer
+					return observerPtr == reflect.ValueOf(v).Pointer()
 				})
 				return
 			}
-			logger.Log.Warn("remove observer failed. observers not contained this observer")
+			logger.Log.Warn("remove observer failed. observers not contained this observer", zap.String("key", key))
 			return
 		}
 		if !contains {
 			b.observers[key] = append(b.observers[key], observer)
 			return
 		}
-		logger.Log.Warn("add observer failed. observers already contained this observer")
+		logger.Log.Warn("add observer failed. observers already contained this observer", zap.String("key", key))
 	})
 }
 
 // notify 黑板数据(用户域)改变时通知监听函数执行
-//  @receiver b
-//  @param op
-//  @param key
-//  @param oldVal
-//  @param newVal
 //
+//	@receiver b
+//	@param op
+//	@param key
+//	@param oldVal
+//	@param newVal
 func (b *Blackboard) notify(op OpType, key string, oldVal any, newVal any) {
 	// 无论调用方是否在AI线程里,都兜底派发到AI线程,使监听函数在AI线程里串行
 	thread.GoByID(b.threadID, func() {
@@ -215,12 +222,12 @@ func (b *Blackboard) notify(op OpType, key string, oldVal any, newVal any) {
 }
 
 // Get
-//  @implement IBlackboard.Get
-//  @receiver b
-//  @param key
-//  @return any
-//  @return bool
 //
+//	@implement IBlackboard.Get
+//	@receiver b
+//	@param key
+//	@return any
+//	@return bool
 func (b *Blackboard) Get(key string) (any, bool) {
 	val, ok := b.userMemory[key]
 	if ok || b.parent == nil {
@@ -232,11 +239,12 @@ func (b *Blackboard) Get(key string) (any, bool) {
 }
 
 // GetDuration
-//  @implement IBlackboard.GetDuration
-//  @receiver b
-//  @param key
-//  @return time.Duration
-//  @return bool
+//
+//	@implement IBlackboard.GetDuration
+//	@receiver b
+//	@param key
+//	@return time.Duration
+//	@return bool
 func (b *Blackboard) GetDuration(key string) (time.Duration, bool) {
 	val, ok := b.Get(key)
 	switch v := val.(type) {
@@ -257,11 +265,11 @@ func (b *Blackboard) GetDuration(key string) (time.Duration, bool) {
 }
 
 // Set
-//  @implement IBlackboard.Set
-//  @receiver b
-//  @param key
-//  @param val
 //
+//	@implement IBlackboard.Set
+//	@receiver b
+//	@param key
+//	@param val
 func (b *Blackboard) Set(key string, val any) {
 	b.memoryMutex.Lock()
 	defer b.memoryMutex.Unlock()
@@ -283,10 +291,10 @@ func (b *Blackboard) Set(key string, val any) {
 }
 
 // Del
-//  @implement IBlackboard.Del
-//  @receiver b
-//  @param key
 //
+//	@implement IBlackboard.Del
+//	@receiver b
+//	@param key
 func (b *Blackboard) Del(key string) {
 	b.memoryMutex.Lock()
 	defer b.memoryMutex.Unlock()
@@ -329,7 +337,8 @@ type IBlackboard interface {
 }
 
 // IBlackboardInternal 框架内或自定义节点时使用的黑板,从 IBlackboard 转化来
-//  含有私有API,业务层请勿调用,避免引发不可预期的后果
+//
+//	含有私有API,业务层请勿调用,避免引发不可预期的后果
 type IBlackboardInternal interface {
 	IBlackboard
 	// ThreadID 获取线程ID

@@ -1,5 +1,7 @@
 package bcore
 
+import "go.uber.org/zap"
+
 // IDecorator 装饰器,修饰子节点
 type IDecorator interface {
 	INode
@@ -22,7 +24,8 @@ type IDecoratorWorker interface {
 var _ IDecorator = (*Decorator)(nil)
 
 // Decorator 装饰器基类
-//  @implement IDecorator
+//
+//	@implement IDecorator
 type Decorator struct {
 	Container
 	IDecoratorWorker
@@ -30,36 +33,44 @@ type Decorator struct {
 }
 
 // InitNodeWorker
-//  @override Node.InitNodeWorker
-//  @receiver c
-//  @param worker
+//
+//	@override Node.InitNodeWorker
+//	@receiver c
+//	@param worker
 func (d *Decorator) InitNodeWorker(worker INodeWorker) error {
-	err := d.Node.InitNodeWorker(worker)
+	err := d.Container.InitNodeWorker(worker)
 	// 强转,由框架本身保证实例化时传进来的worker是自己(自己实现了IContainerWorker接口,故强转不会panic)
 	d.IDecoratorWorker = worker.(IDecoratorWorker)
 	return err
 }
 
 // CanDynamicDecorate
-//  @implement IDecoratorWorker.CanDynamicDecorate
-//  @receiver d
-//  @return bool
+//
+//	@implement IDecoratorWorker.CanDynamicDecorate
+//	@receiver d
+//	@return bool
 func (d *Decorator) CanDynamicDecorate() bool {
 	return false
 }
 
 // Decorate
-//  @implement IDecorator.Decorate
-//  @receiver n
-//  @param decorated
+//
+//	@implement IDecorator.Decorate
+//	@receiver n
+//	@param decorated
 func (d *Decorator) Decorate(decorated INode) {
+	if d.IDecoratorWorker.CanDynamicDecorate() {
+		d.Log(nil).Info("Warn:you are mount child to a dynamic decorator as static decorator", zap.String("childName", decorated.Name()), zap.String("childTitle", decorated.Title()))
+	}
 	d.decorated = decorated
+	decorated.SetParent(d.INodeWorker.(IContainer))
 }
 
 // Decorated
-//  @implement IDecorator.Decorated
-//  @receiver d
-//  @return INode
+//
+//	@implement IDecorator.Decorated
+//	@receiver d
+//	@return INode
 func (d *Decorator) Decorated(brain IBrain) INode {
 	if !d.IDecoratorWorker.CanDynamicDecorate() {
 		return d.decorated
@@ -72,19 +83,24 @@ func (d *Decorator) Decorated(brain IBrain) INode {
 }
 
 // SetRoot
-//  @override Node.SetRoot
-//  @receiver n
-//  @param root
-func (d *Decorator) SetRoot(root IRoot) {
-	d.Container.SetRoot(root)
-	d.decorated.SetRoot(root)
+//
+//	@override Node.SetRoot
+//	@receiver n
+//	@param root
+func (d *Decorator) SetRoot(brain IBrain, root IRoot) {
+	d.Container.SetRoot(brain, root)
+	// 子节点非动态或者不为空时
+	if d.decorated != nil {
+		d.decorated.SetRoot(brain, root)
+	}
 }
 
 // CompositeAncestorFinished
-//  @override Node.CompositeAncestorFinished
-//  @receiver n
-//  @param brain
-//  @param composite
+//
+//	@override Node.CompositeAncestorFinished
+//	@receiver n
+//	@param brain
+//	@param composite
 func (d *Decorator) CompositeAncestorFinished(brain IBrain, composite IComposite) {
 	d.Container.CompositeAncestorFinished(brain, composite)
 	// 向下传播
@@ -95,10 +111,11 @@ func (d *Decorator) CompositeAncestorFinished(brain IBrain, composite IComposite
 }
 
 // Finish
-//  @override Node.Finish
-//  @receiver d
-//  @param brain
-//  @param succeeded
+//
+//	@override Node.Finish
+//	@receiver d
+//	@param brain
+//	@param succeeded
 func (d *Decorator) Finish(brain IBrain, succeeded bool) {
 	// 动态更换子节点
 	if d.IDecoratorWorker.CanDynamicDecorate() && d.Memory(brain).RequestDynamicChild != nil {

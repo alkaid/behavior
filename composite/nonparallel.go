@@ -31,9 +31,10 @@ type IChildrenOrder interface {
 }
 
 // CurrIdx 当前处理进度index
-//  @receiver n
-//  @param brain
-//  @return int
+//
+//	@receiver n
+//	@param brain
+//	@return int
 func (n *NonParallel) CurrIdx(brain bcore.IBrain) int {
 	return brain.Blackboard().(bcore.IBlackboardInternal).NodeMemory(n.ID()).CurrIndex
 }
@@ -42,9 +43,10 @@ func (n *NonParallel) SetCurrIdx(brain bcore.IBrain, currChild int) {
 }
 
 // CurrChildIdx 当前处理的子节点index
-//  @receiver n
-//  @param brain
-//  @return int
+//
+//	@receiver n
+//	@param brain
+//	@return int
 func (n *NonParallel) CurrChildIdx(brain bcore.IBrain) int {
 	nodeData := brain.Blackboard().(bcore.IBlackboardInternal).NodeMemory(n.ID())
 	// 无需重新排序的节点,使用单例里的索引
@@ -56,27 +58,30 @@ func (n *NonParallel) CurrChildIdx(brain bcore.IBrain) int {
 }
 
 // CurrChild 当前处理的子节点
-//  @receiver n
-//  @param brain
-//  @return behavior.INode
+//
+//	@receiver n
+//	@param brain
+//	@return behavior.INode
 func (n *NonParallel) CurrChild(brain bcore.IBrain) bcore.INode {
 	return n.Children()[n.CurrChildIdx(brain)]
 }
 
 // OnOrder
-//  @implement INonParallelWorker.OnOrder
-//  @receiver n
-//  @param originChildrenOrder
-//  @return orders
-//  @return needOrder
+//
+//	@implement INonParallelWorker.OnOrder
+//	@receiver n
+//	@param originChildrenOrder
+//	@return orders
+//	@return needOrder
 func (n *NonParallel) OnOrder(brain bcore.IBrain, originChildrenOrder []int) (orders []int, needOrder bool) {
 	return originChildrenOrder, false
 }
 
 // InitNodeWorker
-//  @override Node.InitNodeWorker
-//  @receiver c
-//  @param worker
+//
+//	@override Node.InitNodeWorker
+//	@receiver c
+//	@param worker
 func (n *NonParallel) InitNodeWorker(worker bcore.INodeWorker) error {
 	err := n.Composite.InitNodeWorker(worker)
 	// 强转,由框架本身保证实例化时传进来的worker是自己(自己实现了 INonParallelWorker 接口,故强转不会panic)
@@ -85,14 +90,15 @@ func (n *NonParallel) InitNodeWorker(worker bcore.INodeWorker) error {
 }
 
 // OnStart
-//  @override Node.OnStart
-//  @receiver n
-//  @param brain
+//
+//	@override Node.OnStart
+//	@receiver n
+//	@param brain
 func (n *NonParallel) OnStart(brain bcore.IBrain) {
 	n.Composite.OnStart(brain)
 	for _, child := range n.Children() {
 		if !child.IsInactive(brain) {
-			n.Log().Error("child must be inactive", zap.String("child", child.String(brain)))
+			n.Log(brain).Error("child must be inactive", zap.String("child", child.String(brain)))
 			return
 		}
 	}
@@ -110,9 +116,10 @@ func (n *NonParallel) OnStart(brain bcore.IBrain) {
 }
 
 // OnAbort
-//  @override Node.OnAbort
-//  @receiver n
-//  @param brain
+//
+//	@override Node.OnAbort
+//	@receiver n
+//	@param brain
 func (n *NonParallel) OnAbort(brain bcore.IBrain) {
 	n.Composite.OnAbort(brain)
 	// 向下传播给当前活跃子节点
@@ -120,11 +127,12 @@ func (n *NonParallel) OnAbort(brain bcore.IBrain) {
 }
 
 // OnChildFinished
-//  @override Container.OnChildFinished
-//  @receiver r
-//  @param brain
-//  @param child
-//  @param succeeded
+//
+//	@override Container.OnChildFinished
+//	@receiver r
+//	@param brain
+//	@param child
+//	@param succeeded
 func (n *NonParallel) OnChildFinished(brain bcore.IBrain, child bcore.INode, succeeded bool) {
 	n.Composite.OnChildFinished(brain, child, succeeded)
 	// 只要一个成功 || 只要一个失败  就结束
@@ -155,9 +163,10 @@ func (n *NonParallel) processChildren(brain bcore.IBrain) {
 }
 
 // AbortLowerPriorityChildrenForChild
-//  @implement IComposite.AbortLowerPriorityChildrenForChild
-//  @receiver c
-//  @param childAbortBy
+//
+//	@implement IComposite.AbortLowerPriorityChildrenForChild
+//	@receiver c
+//	@param childAbortBy
 func (n *NonParallel) AbortLowerPriorityChildrenForChild(brain bcore.IBrain, childAbortBy bcore.INode) {
 	idx := -1
 	for i, currChild := range n.Children() {
@@ -174,5 +183,5 @@ func (n *NonParallel) AbortLowerPriorityChildrenForChild(brain bcore.IBrain, chi
 	}
 }
 func (n *NonParallel) OnString(brain bcore.IBrain) string {
-	return fmt.Sprintf("%s[%d]", n.Composite.OnString(brain), n.CurrChildIdx(brain))
+	return fmt.Sprintf("%s[%d-%s]", n.Composite.OnString(brain), n.CurrChildIdx(brain), n.CurrChild(brain).Title())
 }

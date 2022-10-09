@@ -32,20 +32,22 @@ func NewRandomWorker(node bcore.IComposite) *RandomWorker {
 var _ IChildrenOrder = (*RandomWorker)(nil)
 
 // PropertiesClassProvider
-//  @implement INodeWorker.PropertiesClassProvider
-//  @receiver n
-//  @return any
+//
+//	@implement INodeWorker.PropertiesClassProvider
+//	@receiver n
+//	@return any
 func (r *RandomWorker) PropertiesClassProvider() any {
 	return &RandomCompositeProperties{}
 }
 
 // OnOrder
-//  @implement INonParallelWorker.OnOrder
-//  @receiver r
-//  @param brain
-//  @param originChildrenOrder
-//  @return orders
-//  @return needOrder
+//
+//	@implement INonParallelWorker.OnOrder
+//	@receiver r
+//	@param brain
+//	@param originChildrenOrder
+//	@return orders
+//	@return needOrder
 func (r *RandomWorker) OnOrder(brain bcore.IBrain, originChildrenOrder []int) (orders []int, needOrder bool) {
 	// 根据权重属性排序,若没有配置,则随机
 	weights := r.node.Properties().(IRandomCompositeProperties).GetWeight()
@@ -75,7 +77,7 @@ func (r *RandomWorker) OnOrder(brain bcore.IBrain, originChildrenOrder []int) (o
 	}
 	shuffled, err := wrand.ShuffleWithWeights(realWeights)
 	if err != nil {
-		r.node.Log().Error("order children error", zap.Error(err))
+		r.node.Log(brain).Error("order children error", zap.Error(err))
 		return originChildrenOrder, false
 	}
 	return shuffled, true

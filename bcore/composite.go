@@ -15,7 +15,8 @@ type IComposite interface {
 var _ IComposite = (*Composite)(nil)
 
 // Composite 复合节点基类
-//  @implement IComposite
+//
+//	@implement IComposite
 type Composite struct {
 	Container
 	children []INode
@@ -25,45 +26,47 @@ func (c *Composite) Children() []INode {
 	return c.children
 }
 func (c *Composite) AddChild(child INode) {
-	child.SetParent(c)
+	child.SetParent(c.NodeWorker().(IComposite))
 	c.children = append(c.children, child)
 }
 
 func (c *Composite) AddChildren(children []INode) {
 	for _, child := range children {
-		child.SetParent(c)
+		child.SetParent(c.NodeWorker().(IComposite))
 	}
 	c.children = append(c.children, children...)
 }
 
 // SetRoot
-//  @override Node.SetRoot
-//  @receiver n
-//  @param root
-func (c *Composite) SetRoot(root IRoot) {
-	c.Container.SetRoot(root)
+//
+//	@override Node.SetRoot
+//	@receiver n
+//	@param root
+func (c *Composite) SetRoot(brain IBrain, root IRoot) {
+	c.Container.SetRoot(brain, root)
 	for _, child := range c.children {
-		child.SetRoot(root)
+		child.SetRoot(brain, root)
 	}
 }
 
 // Finish
-//  @override Node.Finish
-//  @receiver n
-//  @param brain
-//  @param succeeded
 //
+//	@override Node.Finish
+//	@receiver n
+//	@param brain
+//	@param succeeded
 func (c *Composite) Finish(brain IBrain, succeeded bool) {
 	// 广播所有子节点
 	for _, child := range c.children {
-		child.CompositeAncestorFinished(brain, c)
+		child.CompositeAncestorFinished(brain, c.NodeWorker().(IComposite))
 	}
 	c.Container.Finish(brain, succeeded)
 }
 
 // AbortLowerPriorityChildrenForChild panic实现不可继承,子类须自行实现 IComposite.AbortLowerPriorityChildrenForChild
-//  @receiver c
-//  @param childAbortBy
+//
+//	@receiver c
+//	@param childAbortBy
 func (c *Composite) AbortLowerPriorityChildrenForChild(brain IBrain, childAbortBy INode) {
 	panic("implement me")
 }

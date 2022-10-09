@@ -25,7 +25,8 @@ func (p *DynamicSubtreeProperties) GetRunMode() bcore.DynamicBehaviorMode {
 }
 
 // IDynamicSubtree 动态子树容器
-//  可以在运行时动态更换子节点
+//
+//	可以在运行时动态更换子节点
 type IDynamicSubtree interface {
 	ISubtree
 	Tag() string
@@ -35,23 +36,26 @@ type IDynamicSubtree interface {
 var _ IDynamicSubtree = (*DynamicSubtree)(nil)
 
 // DynamicSubtree 动态子树容器
-//  可以在运行时动态更换子节点
+//
+//	可以在运行时动态更换子节点
 type DynamicSubtree struct {
 	Subtree
 }
 
 // PropertiesClassProvider
-//  @implement INodeWorker.PropertiesClassProvider
-//  @receiver n
-//  @return any
+//
+//	@implement INodeWorker.PropertiesClassProvider
+//	@receiver n
+//	@return any
 func (t *DynamicSubtree) PropertiesClassProvider() any {
-	return &DynamicSubtree{}
+	return &DynamicSubtreeProperties{}
 }
 
 // CanDynamicDecorate 标志可以运行时动态挂载子节点
-//  @implement bcore.IDecoratorWorker .CanDynamicDecorate
-//  @receiver t
-//  @return bool
+//
+//	@implement bcore.IDecoratorWorker .CanDynamicDecorate
+//	@receiver t
+//	@return bool
 func (t *DynamicSubtree) CanDynamicDecorate() bool {
 	return true
 }
@@ -60,11 +64,12 @@ func (t *DynamicSubtree) Tag() string {
 }
 
 // DynamicDecorate
-//  @implement IDynamicSubtree.DynamicDecorate
-//  @receiver d
-//  @param brain
-//  @param decorated
-//  @param abort
+//
+//	@implement IDynamicSubtree.DynamicDecorate
+//	@receiver d
+//	@param brain
+//	@param decorated
+//	@param abort
 func (t *DynamicSubtree) DynamicDecorate(brain bcore.IBrain, decorated bcore.IRoot) {
 	// 保证线程安全
 	thread.GoByID(brain.Blackboard().(bcore.IBlackboardInternal).ThreadID(), func() {
@@ -91,11 +96,12 @@ func (t *DynamicSubtree) DynamicDecorate(brain bcore.IBrain, decorated bcore.IRo
 }
 
 // OnChildFinished
-//  @override Decorator.OnChildFinished
-//  @receiver s
-//  @param brain
-//  @param child
-//  @param succeeded
+//
+//	@override Decorator.OnChildFinished
+//	@receiver s
+//	@param brain
+//	@param child
+//	@param succeeded
 func (t *DynamicSubtree) OnChildFinished(brain bcore.IBrain, child bcore.INode, succeeded bool) {
 	t.Decorator.OnChildFinished(brain, child, succeeded)
 	if !t.Memory(brain).Restarting {

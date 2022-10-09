@@ -28,7 +28,8 @@ func (s *SubtreeProperties) GetIsSuccessWhenNotChild() bool {
 }
 
 // ISubtree 静态子树容器
-//  只能在初始化时添加子节点,不允许在运行时改变子节点
+//
+//	只能在初始化时添加子节点,不允许在运行时改变子节点
 type ISubtree interface {
 	bcore.IDecorator
 	// GetPropChildID 获取配置中的子节点ID
@@ -42,15 +43,17 @@ type ISubtree interface {
 var _ ISubtree = (*Subtree)(nil)
 
 // Subtree 静态子树容器
-//  只能在初始化时添加子节点,不允许在运行时改变子节点
+//
+//	只能在初始化时添加子节点,不允许在运行时改变子节点
 type Subtree struct {
 	bcore.Decorator
 }
 
 // PropertiesClassProvider
-//  @implement INodeWorker.PropertiesClassProvider
-//  @receiver n
-//  @return any
+//
+//	@implement INodeWorker.PropertiesClassProvider
+//	@receiver n
+//	@return any
 func (t *Subtree) PropertiesClassProvider() any {
 	return &SubtreeProperties{}
 }
@@ -60,15 +63,16 @@ func (t *Subtree) SubtreeProperties() ISubtreeProperties {
 }
 
 // OnStart
-//  @override Node.OnStart
-//  @receiver n
-//  @param brain
+//
+//	@override Node.OnStart
+//	@receiver n
+//	@param brain
 func (t *Subtree) OnStart(brain bcore.IBrain) {
 	t.Decorator.OnStart(brain)
 	// 无子节点时默认返回失败
 	if t.Decorated(brain) == nil {
 		if t.GetPropChildID() != "" {
-			t.Log().Error("child not empty in properties,you must decorate child")
+			t.Log(brain).Error("child not empty in properties,you must decorate child")
 			return
 		}
 		t.Finish(brain, t.SubtreeProperties().GetIsSuccessWhenNotChild())
@@ -78,9 +82,10 @@ func (t *Subtree) OnStart(brain bcore.IBrain) {
 }
 
 // OnAbort
-//  @override Node.OnAbort
-//  @receiver n
-//  @param brain
+//
+//	@override Node.OnAbort
+//	@receiver n
+//	@param brain
 func (t *Subtree) OnAbort(brain bcore.IBrain) {
 	t.Decorator.OnAbort(brain)
 	// 向下传播
@@ -94,28 +99,31 @@ func (t *Subtree) OnAbort(brain bcore.IBrain) {
 }
 
 // OnChildFinished
-//  @override bcore.Decorator .OnChildFinished
-//  @receiver s
-//  @param brain
-//  @param child
-//  @param succeeded
+//
+//	@override bcore.Decorator .OnChildFinished
+//	@receiver s
+//	@param brain
+//	@param child
+//	@param succeeded
 func (t *Subtree) OnChildFinished(brain bcore.IBrain, child bcore.INode, succeeded bool) {
 	t.Decorator.OnChildFinished(brain, child, succeeded)
 	t.Finish(brain, succeeded)
 }
 
 // GetPropChildID
-//  @implement ISubtree.GetPropChildID
-//  @receiver s
-//  @return string
+//
+//	@implement ISubtree.GetPropChildID
+//	@receiver s
+//	@return string
 func (t *Subtree) GetPropChildID() string {
 	return t.Properties().(ISubtreeProperties).GetChildID()
 }
 
 // GetPropChildTag
-//  @implement ISubtree.GetPropChildTag
-//  @receiver s
-//  @return string
+//
+//	@implement ISubtree.GetPropChildTag
+//	@receiver s
+//	@return string
 func (t *Subtree) GetPropChildTag() string {
 	return t.Properties().(ISubtreeProperties).GetChildTag()
 }

@@ -19,15 +19,17 @@ type ConditionProperties struct {
 }
 
 // Condition 条件装饰器
-//  将根据配置定时检查委托方法，并根据结果（等于或不等）阻止或允许节点的执行。
+//
+//	将根据配置定时检查委托方法，并根据结果（等于或不等）阻止或允许节点的执行。
 type Condition struct {
 	bcore.ObservingDecorator
 }
 
 // PropertiesClassProvider
-//  @implement INodeWorker.PropertiesClassProvider
-//  @receiver n
-//  @return any
+//
+//	@implement INodeWorker.PropertiesClassProvider
+//	@receiver n
+//	@return any
 func (c *Condition) PropertiesClassProvider() any {
 	return &ConditionProperties{}
 }
@@ -37,15 +39,16 @@ func (c *Condition) ConditionProperties() IConditionProperties {
 }
 
 // StartObserving
-//  @override bcore.ObservingDecorator .StartObserving
-//  @receiver o
-//  @param brain
+//
+//	@override bcore.ObservingDecorator .StartObserving
+//	@receiver o
+//	@param brain
 func (c *Condition) StartObserving(brain bcore.IBrain) {
 	c.ObservingDecorator.StartObserving(brain)
 	interval := c.Properties().(IServiceProperties).GetInterval()
 	randomDeviation := c.Properties().(IServiceProperties).GetRandomDeviation()
 	if interval <= 0 {
-		interval = c.Root().Interval()
+		interval = c.Root(brain).Interval()
 	}
 	c.StopObserving(brain)
 	lastTime := time.Now()
@@ -59,9 +62,10 @@ func (c *Condition) StartObserving(brain bcore.IBrain) {
 }
 
 // StopObserving
-//  @override bcore.ObservingDecorator .StopObserving
-//  @receiver o
-//  @param brain
+//
+//	@override bcore.ObservingDecorator .StopObserving
+//	@receiver o
+//	@param brain
 func (c *Condition) StopObserving(brain bcore.IBrain) {
 	memory := c.Memory(brain)
 	if memory.CronTask != nil {
@@ -71,11 +75,12 @@ func (c *Condition) StopObserving(brain bcore.IBrain) {
 }
 
 // ConditionMet
-//  @implement bcore.IObservingWorker .ConditionMet
-//  @receiver o
-//  @param brain
-//  @param args
-//  @return bool
+//
+//	@implement bcore.IObservingWorker .ConditionMet
+//	@receiver o
+//	@param brain
+//	@param args
+//	@return bool
 func (c *Condition) ConditionMet(brain bcore.IBrain, args ...any) bool {
 	var delta time.Duration
 	if len(args) > 0 {
@@ -85,6 +90,6 @@ func (c *Condition) ConditionMet(brain bcore.IBrain, args ...any) bool {
 		ret := c.Update(brain, bcore.EventTypeOnUpdate, delta)
 		return ret == bcore.ResultSucceeded
 	}
-	c.Log().Error("must set delegator method")
+	c.Log(brain).Error("must set delegator method")
 	return false
 }

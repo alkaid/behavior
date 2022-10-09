@@ -39,15 +39,17 @@ func (b *BBConditionProperties) GetValue() any {
 }
 
 // BBCondition 黑板条件
-//  节点将检查给定的 黑板键（Blackboard Key） 上是否设置了值。
+//
+//	节点将检查给定的 黑板键（Blackboard Key） 上是否设置了值。
 type BBCondition struct {
 	bcore.ObservingDecorator
 }
 
 // PropertiesClassProvider
-//  @implement INodeWorker.PropertiesClassProvider
-//  @receiver n
-//  @return any
+//
+//	@implement INodeWorker.PropertiesClassProvider
+//	@receiver n
+//	@return any
 func (c *BBCondition) PropertiesClassProvider() any {
 	return &BBConditionProperties{}
 }
@@ -57,18 +59,20 @@ func (c *BBCondition) BBConditionProperties() IBBConditionProperties {
 }
 
 // StartObserving
-//  @override bcore.ObservingDecorator .StartObserving
-//  @receiver o
-//  @param brain
+//
+//	@override bcore.ObservingDecorator .StartObserving
+//	@receiver o
+//	@param brain
 func (c *BBCondition) StartObserving(brain bcore.IBrain) {
 	c.ObservingDecorator.StartObserving(brain)
 	brain.Blackboard().(bcore.IBlackboardInternal).AddObserver(c.BBConditionProperties().GetKey(), c.getObserver(brain))
 }
 
 // StopObserving
-//  @override bcore.ObservingDecorator .StopObserving
-//  @receiver o
-//  @param brain
+//
+//	@override bcore.ObservingDecorator .StopObserving
+//	@receiver o
+//	@param brain
 func (c *BBCondition) StopObserving(brain bcore.IBrain) {
 	c.ObservingDecorator.StopObserving(brain)
 	brain.Blackboard().(bcore.IBlackboardInternal).RemoveObserver(c.BBConditionProperties().GetKey(), c.getObserver(brain))
@@ -76,12 +80,14 @@ func (c *BBCondition) StopObserving(brain bcore.IBrain) {
 }
 
 // ConditionMet
-//  @implement bcore.IObservingWorker .ConditionMet
-//  @receiver o
-//  @param brain
-//  @param args
-//  @return bool
-// nolint
+//
+//	@implement bcore.IObservingWorker .ConditionMet
+//	@receiver o
+//	@param brain
+//	@param args
+//	@return bool
+//
+//nolint:gocyclo
 func (c *BBCondition) ConditionMet(brain bcore.IBrain, args ...any) bool {
 	// 若委托存在,优先使用委托
 	if c.HasDelegatorOrScript() {
@@ -106,7 +112,7 @@ func (c *BBCondition) ConditionMet(brain bcore.IBrain, args ...any) bool {
 		if bbOk && propOk {
 			break
 		}
-		c.Log().Error("value cannot compare", zap.Int("operate", int(c.BBConditionProperties().GetOperator())), zap.Any("blackboardValue", v), zap.Any("configValue", propValue))
+		c.Log(brain).Error("value cannot compare", zap.Int("operate", int(c.BBConditionProperties().GetOperator())), zap.Any("blackboardValue", v), zap.Any("configValue", propValue))
 		return false
 	}
 	switch c.BBConditionProperties().GetOperator() {
@@ -131,7 +137,7 @@ func (c *BBCondition) ConditionMet(brain bcore.IBrain, args ...any) bool {
 	case bcore.OperatorIsLt:
 		return bbNumber < propNumber
 	}
-	c.Log().Error("not support operator", zap.Int("operator", int(c.BBConditionProperties().GetOperator())))
+	c.Log(brain).Error("not support operator", zap.Int("operator", int(c.BBConditionProperties().GetOperator())))
 	return false
 }
 

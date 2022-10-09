@@ -16,11 +16,11 @@ var ErrConvertGenericType = errors.New("convert generic type error")
 type Memory = map[string]any
 
 // ConvertAnyValue [T any] 转换 any 类型的值为传入的范型,一般配合map使用
-//  @param v 值
-//  @param ok 值是否有效
-//  @return T
-//  @return bool
 //
+//	@param v 值
+//	@param ok 值是否有效
+//	@return T
+//	@return bool
 func ConvertAnyValue[T any](v any, ok bool) (T, bool) {
 	var zero T
 	if !ok {
@@ -35,10 +35,11 @@ func ConvertAnyValue[T any](v any, ok bool) (T, bool) {
 }
 
 // MapValue [T any] 从 Memory 中获取值
-//  @param m
-//  @param key
-//  @return T
-//  @return bool
+//
+//	@param m
+//	@param key
+//	@return T
+//	@return bool
 func MapValue[T any](m Memory, key string) (T, bool) {
 	v, ok := m[key]
 	return ConvertAnyValue[T](v, ok)
@@ -51,6 +52,7 @@ type NodeMemory struct {
 	MountParent         IContainer // 动态挂载的父节点,仅 Root 有效
 	DynamicChild        INode      // 动态挂载的子节点
 	RequestDynamicChild INode      // 请求挂载的子节点,延迟到旧的分支执行完成后才真正挂载到 DynamicChild
+	DynamicRoot         IRoot      // 动态子树的根节点
 	Observing           bool       // 是否监听中,仅 ObservingDecorator 及其派生类有效
 	// 根据节点类型意义不同:
 	//  1.非随机组合节点:当前运行中的子节点索引;

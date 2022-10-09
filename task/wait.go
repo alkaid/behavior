@@ -15,6 +15,7 @@ type IWaitProperties interface {
 	GetWaitTime() time.Duration
 	GetRandomDeviation() time.Duration
 	GetForever() bool
+	GetResultOnAbort() bool
 }
 
 // WaitProperties 等待属性
@@ -22,6 +23,7 @@ type WaitProperties struct {
 	WaitTime        util.Duration `json:"waitTime"`        // 等待时间
 	RandomDeviation util.Duration `json:"randomDeviation"` // 随机偏差:允许向 等待时间（Wait Time） 属性添加随机时间（正或负）
 	Forever         bool          `json:"forever"`         // 永久等待直到被外界打断
+	ResultOnAbort   bool          `json:"resultOnAbort"`   // 中断时返回成功还是失败,默认false
 }
 
 func (w *WaitProperties) GetWaitTime() time.Duration {
@@ -35,17 +37,22 @@ func (w *WaitProperties) GetRandomDeviation() time.Duration {
 func (w *WaitProperties) GetForever() bool {
 	return w.Forever
 }
+func (w *WaitProperties) GetResultOnAbort() bool {
+	return w.ResultOnAbort
+}
 
 // Wait 等待
-//  任务节点可以在行为树中使用，使树在此节点上等待，直至指定的 等待时间（Wait Time） 结束。
+//
+//	任务节点可以在行为树中使用，使树在此节点上等待，直至指定的 等待时间（Wait Time） 结束。
 type Wait struct {
 	bcore.Task
 }
 
 // PropertiesClassProvider
-//  @implement INodeWorker.PropertiesClassProvider
-//  @receiver n
-//  @return any
+//
+//	@implement INodeWorker.PropertiesClassProvider
+//	@receiver n
+//	@return any
 func (w *Wait) PropertiesClassProvider() any {
 	return &WaitProperties{}
 }
@@ -54,9 +61,10 @@ func (w *Wait) WaitProperties() IWaitProperties {
 }
 
 // OnStart
-//  @override Node.OnStart
-//  @receiver n
-//  @param brain
+//
+//	@override Node.OnStart
+//	@receiver n
+//	@param brain
 func (w *Wait) OnStart(brain bcore.IBrain) {
 	w.Task.OnStart(brain)
 	w.Memory(brain).Elapsed = 0
@@ -69,13 +77,14 @@ func (w *Wait) OnStart(brain bcore.IBrain) {
 }
 
 // OnAbort
-//  @override Node.OnAbort
-//  @receiver n
-//  @param brain
+//
+//	@override Node.OnAbort
+//	@receiver n
+//	@param brain
 func (w *Wait) OnAbort(brain bcore.IBrain) {
 	w.Task.OnAbort(brain)
 	w.stopTimer(brain)
-	w.Finish(brain, false)
+	w.Finish(brain, w.WaitProperties().GetResultOnAbort())
 }
 
 func (w *Wait) stopTimer(brain bcore.IBrain) {

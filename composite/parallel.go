@@ -17,29 +17,31 @@ type ParallelProperties struct {
 }
 
 // Parallel 并行组合基类,节点按从左到右的顺序根据结束模式决定完成时机
-// 	并行执行所有子节点，根据成功原则和失败原则，决定节点停用时机
-// 	| 成功原则 | 失败原则 |
-// 	| ParallelProperties.SuccessPolicy | ParallelProperties.FailurePolicy |
 //
-// 	| behavior.FinishModeOne | behavior.FinishModeOne |
-// 	第一个子节点停用返回true(false)后，关闭所有子节点，停用当前节点返回true(false)
+//	并行执行所有子节点，根据成功原则和失败原则，决定节点停用时机
+//	| 成功原则 | 失败原则 |
+//	| ParallelProperties.SuccessPolicy | ParallelProperties.FailurePolicy |
 //
-// 	| behavior.FinishModeOne | behavior.FinishModeAll |
-// 	当有一个子节点停用返回true后，关闭所有子节点，停用当前节点返回true，否则返回false
+//	| behavior.FinishModeOne | behavior.FinishModeOne |
+//	第一个子节点停用返回true(false)后，关闭所有子节点，停用当前节点返回true(false)
 //
-// 	| behavior.FinishModeAll | behavior.FinishModeOne |
-// 	所有子节点停用返回true后，当前节点停用返回true，否则返回false
+//	| behavior.FinishModeOne | behavior.FinishModeAll |
+//	当有一个子节点停用返回true后，关闭所有子节点，停用当前节点返回true，否则返回false
 //
-// 	| behavior.FinishModeAll | behavior.FinishModeAll |
-// 	所有子节点停用返回true后，当前节点停用返回true，否则返回false
+//	| behavior.FinishModeAll | behavior.FinishModeOne |
+//	所有子节点停用返回true后，当前节点停用返回true，否则返回false
+//
+//	| behavior.FinishModeAll | behavior.FinishModeAll |
+//	所有子节点停用返回true后，当前节点停用返回true，否则返回false
 type Parallel struct {
 	bcore.Composite
 }
 
 // PropertiesClassProvider
-//  @implement INodeWorker.PropertiesClassProvider
-//  @receiver n
-//  @return any
+//
+//	@implement INodeWorker.PropertiesClassProvider
+//	@receiver n
+//	@return any
 func (p *Parallel) PropertiesClassProvider() any {
 	return &ParallelProperties{}
 }
@@ -49,9 +51,10 @@ func (p *Parallel) PMemory(brain bcore.IBrain) *bcore.ParallelMemory {
 }
 
 // OnStart
-//  @override Node.OnStart
-//  @receiver n
-//  @param brain
+//
+//	@override Node.OnStart
+//	@receiver n
+//	@param brain
 func (p *Parallel) OnStart(brain bcore.IBrain) {
 	p.Composite.OnStart(brain)
 	// 初始化状态
@@ -60,7 +63,7 @@ func (p *Parallel) OnStart(brain bcore.IBrain) {
 	}
 	for _, child := range p.Children() {
 		if !child.IsInactive(brain) {
-			p.Log().Error("child must be inactive", zap.String("child", child.String(brain)))
+			p.Log(brain).Error("child must be inactive", zap.String("child", child.String(brain)))
 			return
 		}
 	}
@@ -71,14 +74,15 @@ func (p *Parallel) OnStart(brain bcore.IBrain) {
 }
 
 // OnAbort
-//  @override Node.OnAbort
-//  @receiver n
-//  @param brain
+//
+//	@override Node.OnAbort
+//	@receiver n
+//	@param brain
 func (p *Parallel) OnAbort(brain bcore.IBrain) {
 	memory := p.PMemory(brain)
 	allChildrenStarted := len(p.Children()) == memory.RunningCount+memory.SucceededCount+memory.FailedCount
 	if !allChildrenStarted {
-		p.Log().Error("parallel status error", zap.Int("runningCount", memory.RunningCount), zap.Int("succeededCount", memory.SucceededCount), zap.Int("failedCount", memory.FailedCount))
+		p.Log(brain).Error("parallel status error", zap.Int("runningCount", memory.RunningCount), zap.Int("succeededCount", memory.SucceededCount), zap.Int("failedCount", memory.FailedCount))
 		return
 	}
 	// 向下传播给当前活跃子节点
@@ -90,12 +94,14 @@ func (p *Parallel) OnAbort(brain bcore.IBrain) {
 }
 
 // OnChildFinished
-//  @override Container.OnChildFinished
-//  @receiver r
-//  @param brain
-//  @param child
-//  @param succeeded
-// nolint
+//
+//	@override Container.OnChildFinished
+//	@receiver r
+//	@param brain
+//	@param child
+//	@param succeeded
+//
+//nolint:gocyclo
 func (p *Parallel) OnChildFinished(brain bcore.IBrain, child bcore.INode, succeeded bool) {
 	p.Composite.OnChildFinished(brain, child, succeeded)
 	memory := p.PMemory(brain)
@@ -126,10 +132,10 @@ func (p *Parallel) OnChildFinished(brain bcore.IBrain, child bcore.INode, succee
 		p.Finish(brain, memory.Succeeded)
 	} else if !memory.ChildrenAborted {
 		if memory.SucceededCount == len(p.Children()) {
-			p.Log().Error("succeeded count error")
+			p.Log(brain).Error("succeeded count error")
 		}
 		if memory.FailedCount == len(p.Children()) {
-			p.Log().Error("failed count error")
+			p.Log(brain).Error("failed count error")
 		}
 		if p.Properties().(IParallelProperties).GetFailurePolicy() == bcore.FinishModeOne && memory.FailedCount > 0 {
 			memory.Succeeded = false
@@ -149,12 +155,13 @@ func (p *Parallel) OnChildFinished(brain bcore.IBrain, child bcore.INode, succee
 }
 
 // AbortLowerPriorityChildrenForChild
-//  @implement IComposite.AbortLowerPriorityChildrenForChild
-//  @receiver c
-//  @param childAbortBy
+//
+//	@implement IComposite.AbortLowerPriorityChildrenForChild
+//	@receiver c
+//	@param childAbortBy
 func (p *Parallel) AbortLowerPriorityChildrenForChild(brain bcore.IBrain, childAbortBy bcore.INode) {
 	if !childAbortBy.IsActive(brain) {
-		p.Log().Error("child must be active")
+		p.Log(brain).Error("child must be active")
 		return
 	}
 	memory := p.PMemory(brain)
