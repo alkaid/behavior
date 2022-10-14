@@ -2,7 +2,6 @@ package task
 
 import (
 	"github.com/alkaid/behavior/bcore"
-	"github.com/alkaid/behavior/thread"
 )
 
 type IDynamicSubtreeProperties interface {
@@ -30,6 +29,11 @@ func (p *DynamicSubtreeProperties) GetRunMode() bcore.DynamicBehaviorMode {
 type IDynamicSubtree interface {
 	ISubtree
 	Tag() string
+	// DynamicDecorate 动态装饰子节点
+	//
+	// 非线程安全,由调用方自己保证
+	// @param brain
+	// @param decorated
 	DynamicDecorate(brain bcore.IBrain, decorated bcore.IRoot)
 }
 
@@ -71,28 +75,26 @@ func (t *DynamicSubtree) Tag() string {
 //	@param decorated
 //	@param abort
 func (t *DynamicSubtree) DynamicDecorate(brain bcore.IBrain, decorated bcore.IRoot) {
+	if t.IsInactive(brain) {
+		t.Memory(brain).DynamicChild = decorated
+		decorated.DynamicMount(brain, t)
+		return
+	}
+	// 如果已经激活,需要等待子树完成或强制中断
+	t.Memory(brain).RequestDynamicChild = decorated
+	if t.IsAborting(brain) {
+		return
+	}
 	// 保证线程安全
-	thread.GoByID(brain.Blackboard().(bcore.IBlackboardInternal).ThreadID(), func() {
-		if t.IsInactive(brain) {
-			t.Memory(brain).DynamicChild = decorated
-			decorated.DynamicMount(brain, t)
-			return
-		}
-		// 如果已经激活,需要等待子树完成或强制中断
-		t.Memory(brain).RequestDynamicChild = decorated
-		if t.IsAborting(brain) {
-			return
-		}
-		switch t.Properties().(IDynamicSubtreeProperties).GetRunMode() {
-		case bcore.DynamicBehaviorModeContinue:
-			return
-		case bcore.DynamicBehaviorModeAbort:
-			t.Abort(brain)
-		case bcore.DynamicBehaviorModeRestart:
-			t.Memory(brain).Restarting = true
-			t.Abort(brain)
-		}
-	})
+	switch t.Properties().(IDynamicSubtreeProperties).GetRunMode() {
+	case bcore.DynamicBehaviorModeContinue:
+		return
+	case bcore.DynamicBehaviorModeAbort:
+		t.Abort(brain)
+	case bcore.DynamicBehaviorModeRestart:
+		t.Memory(brain).Restarting = true
+		t.Abort(brain)
+	}
 }
 
 // OnChildFinished

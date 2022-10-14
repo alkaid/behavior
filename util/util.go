@@ -32,10 +32,11 @@ func Float(origin any) (out float64, ok bool) {
 	return out, ok
 }
 
-const defaultNanoIDLen = 8
+const defaultNanoIDLen = 32
 
 // NanoID 随机唯一ID like UUID
-//  @return string
+//
+//	@return string
 func NanoID() string {
 	id, err := gonanoid.ID(defaultNanoIDLen)
 	if err != nil {

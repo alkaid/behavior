@@ -140,6 +140,11 @@ func (b *Blackboard) Stop() {
 		return
 	}
 	b.enable = false
+	// 销毁所有树和节点数据,销毁所有监听
+	b.observers = map[string][]Observer{}
+	b.treesMemory = map[string]Memory{}
+	b.nodesData = map[string]*NodeMemory{}
+	// 从父黑板中移除自己
 	if b.parent != nil {
 		b.parent.children = lo.DropWhile(b.parent.children, func(v *Blackboard) bool { return v == b })
 	}

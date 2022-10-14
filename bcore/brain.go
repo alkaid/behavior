@@ -20,6 +20,7 @@ type IBrain interface {
 	// FinishChan 树运行结束的信道
 	//  @return <-chan
 	FinishChan() <-chan *FinishEvent
+	SetFinishChan(finishChan chan *FinishEvent)
 	// Blackboard 获取黑板
 	//  @return IBlackboard
 	Blackboard() IBlackboard
@@ -35,11 +36,29 @@ type IBrain interface {
 	//  @return IRoot
 	RunningTree() IRoot
 	// Running 是否有正在执行的树
-	//  @return bool
+	//
+	// 非线程安全
+	// @return bool
 	Running() bool
-	// ForceRun 执行指定树,若已经有运行中的树则终止后再启动
-	//  @param root
-	ForceRun(root IRoot)
+	// Abort 终止正在运行的行为树
+	//  线程安全
+	//
+	// @param abortChan
+	Abort(abortChan chan *FinishEvent)
+	// Run 异步启动
+	//
+	// @param tag
+	// @param force 是否强制终止正在运行的树
+	Run(tag string, force bool)
+	// DynamicDecorate 给正在运行的树动态挂载子树
+	//
+	//	非线程安全,调用方自己保证
+	//
+	// @receiver b
+	// @param containerTag 动态子树容器的tag
+	// @param subtreeTag 子树的tag
+	// @return error
+	DynamicDecorate(containerTag string, subtreeTag string) error
 }
 
 // IBrainInternal 框架内部使用的 Brain
@@ -59,6 +78,5 @@ type IBrainInternal interface {
 	//  @return map[string]any
 	GetDelegates() map[string]any
 	RWFinishChan() chan *FinishEvent
-	SetFinishChan(finishChan chan *FinishEvent)
 	SetRunningTree(root IRoot)
 }

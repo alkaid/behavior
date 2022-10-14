@@ -1,8 +1,11 @@
 package behavior
 
 import (
+	"fmt"
 	"reflect"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/alkaid/behavior/thread"
 
@@ -116,42 +119,75 @@ func (b *Brain) Go(task func()) {
 	thread.GoByID(b.blackboard.(bcore.IBlackboardInternal).ThreadID(), task)
 }
 
-func (b *Brain) ForceRun(root bcore.IRoot) {
-	notEnableChan := make(chan struct{})
-	restartChan := make(chan *bcore.FinishEvent)
-	originFinishChan := b.finishChan
-	thread.Go(func() {
-		for {
-			select {
-			case <-notEnableChan:
-				return
-			case e := <-restartChan:
-				b.finishChan = originFinishChan
-				if b.finishChan != nil {
-					b.finishChan <- e
+func (b *Brain) Abort(abortChan chan *bcore.FinishEvent) {
+	b.Go(func() {
+		event := &bcore.FinishEvent{
+			IsAbort:   true,
+			Succeeded: false,
+		}
+		if !b.Running() || !b.RunningTree().IsActive(b) {
+			logger.Log.Warn("brain not running,can not abort")
+			if abortChan != nil {
+				abortChan <- &bcore.FinishEvent{
+					IsAbort:   true,
+					Succeeded: false,
 				}
-				root.Start(b)
+			}
+			return
+		}
+		b.RunningTree().Abort(b)
+		if abortChan != nil {
+			abortChan <- event
+		}
+	})
+}
+func (b *Brain) Run(tag string, force bool) {
+	b.Go(func() {
+		if b.Running() && b.RunningTree().IsActive(b) {
+			if force {
+				b.RunningTree().Abort(b)
+			} else {
 				return
 			}
+		} else {
+			tree := GlobalTreeRegistry().GetNotParentTreeWithoutClone(tag)
+			if tree == nil || tree.Root == nil {
+				logger.Log.Warn("can not find main tree for tag", zap.String("tag", tag))
+			}
+			tree.Root.Start(b)
 		}
 	})
-	thread.GoByID(b.Blackboard().(bcore.IBlackboardInternal).ThreadID(), func() {
-		if !b.Running() {
-			root.Start(b)
-			notEnableChan <- struct{}{}
-			return
-		}
-		if b.RunningTree().IsInactive(b) {
-			logger.Log.Error("brain's tree state error,cannot be inactive")
-			notEnableChan <- struct{}{}
-			return
-		}
-		b.finishChan = restartChan
-		if b.RunningTree().IsActive(b) {
-			// tree finish时会通知 brain.finishChan
-			b.RunningTree().Abort(b)
-		}
-	})
+}
+
+// DynamicDecorate 给正在运行的树动态挂载子树
+//
+//	非线程安全,调用方自己保证
+//
+// @receiver b
+// @param containerTag 动态子树容器的tag
+// @param subtreeTag 子树的tag
+// @return error
+func (b *Brain) DynamicDecorate(containerTag string, subtreeTag string) error {
+	if !b.Running() || !b.RunningTree().IsActive(b) {
+		return errors.New(fmt.Sprintf("brain can not dynamic decorate cause not running tree,containerTag=%s,subtreeTag=%s", containerTag, subtreeTag))
+	}
+	maintree := GlobalTreeRegistry().TreesByID[b.RunningTree().ID()]
+	if maintree == nil {
+		return errors.New(fmt.Sprintf("brain can not dynamic decorate cause not main tree,containerTag=%s,subtreeTag=%s", containerTag, subtreeTag))
+	}
+	container := maintree.DynamicSubtrees[containerTag]
+	if container == nil {
+		return errors.New(fmt.Sprintf("brain can not dynamic decorate cause not dynamic container,containerTag=%s,subtreeTag=%s", containerTag, subtreeTag))
+	}
+	subtree, _, err := GlobalTreeRegistry().getNotDynamicParentTree(subtreeTag, b)
+	if err != nil {
+		return err
+	}
+	if subtree == nil {
+		return errors.New(fmt.Sprintf("brain can not dynamic decorate cause not enough subtree,containerTag=%s,subtreeTag=%s", containerTag, subtreeTag))
+	}
+	container.DynamicDecorate(b, subtree.Root)
+	return nil
 }
 
 // OnNodeUpdate 供节点回调执行委托 会在 Brain 的独立线程里运行

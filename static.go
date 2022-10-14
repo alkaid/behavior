@@ -9,13 +9,15 @@ var handlerPool = handle.NewHandlerPool()
 var treeRegistry = NewTreeRegistry()
 
 // GlobalClassLoader 全局类加载器
-//  @return *ClassLoader
+//
+//	@return *ClassLoader
 func GlobalClassLoader() *ClassLoader {
 	return globalClassLoader
 }
 
 // GlobalHandlerPool 全局反射代理缓存池
-//  @return *handle.HandlerPool
+//
+//	@return *handle.HandlerPool
 func GlobalHandlerPool() *handle.HandlerPool {
 	return handlerPool
 }
@@ -24,9 +26,14 @@ func GlobalTreeRegistry() *TreeRegistry {
 	return treeRegistry
 }
 
+func SetGlobalTreeRegistry(registry *TreeRegistry) {
+	treeRegistry = registry
+}
+
 // RegisterDelegatorType 注册代理类的反射信息
-//  @param name
-//  @param target
+//
+//	@param name
+//	@param target
 func RegisterDelegatorType(name string, target any) error {
 	return handlerPool.Register(name, target)
 }

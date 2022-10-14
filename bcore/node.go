@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/alkaid/behavior/util"
+
 	"github.com/alkaid/behavior/script"
 
 	"github.com/pkg/errors"
@@ -47,6 +49,7 @@ type INode interface {
 	Category() string
 	Properties() any
 	Name() string
+	RawCfg() *config.NodeCfg
 	Delegator() config.DelegatorCfg
 	// HasDelegatorOrScript 是否存在委托方法或脚本
 	//  @return bool
@@ -62,10 +65,10 @@ type INode interface {
 	//  注意由于行为数是单例,这里只能设置当前所在子树的root.
 	//  @param root
 	SetRoot(brain IBrain, root IRoot)
-	// Start 开始执行
+	// Start 开始执行 非线程安全,上层须自行封装线程安全的方法
 	//  @param brain
 	Start(brain IBrain)
-	// Abort 中断(终止)执行
+	// Abort 中断(终止)执行 非线程安全,上层须自行封装线程安全的方法
 	//  一般来说只应该由 IDecorator 调用
 	//  一般来说,中断链路为:
 	//   节点A Abort-> A INodeWorker.OnAbort-> 子节点B Abort (其他所有子结点同理)-> B INodeWorker.OnAbort-> B Finish-> A IContainer.ChildFinished-> <所有子节点都完成了?true:> A Finish-> 继续按上诉链路回溯上一层
@@ -117,9 +120,9 @@ type INodeWorker interface {
 	//  @param brain
 	//  @param composite
 	OnCompositeAncestorFinished(brain IBrain, composite IComposite)
-	// CanMounted 是否可以被挂载,会被 Node.Parent 和 Node.SetParent 回调
+	// CanMountTo 是否可以挂载到目标容器节点上,会被 Node.Parent 和 Node.SetParent 回调
 	//  @return bool
-	CanMounted() bool
+	CanMountTo() bool
 	// OnString Node.String 的回调
 	//  @param brain
 	//  @return string
@@ -146,6 +149,7 @@ type Node struct {
 	category   string              // 类型
 	properties any                 // 自定义属性
 	delegator  config.DelegatorCfg // 委托
+	cfg        *config.NodeCfg     // 原始配置
 }
 
 // Init
@@ -174,6 +178,7 @@ func (n *Node) Init(cfg *config.NodeCfg) error {
 			script.RegisterCode(n.id, n.delegator.Script)
 		}
 	}
+	n.cfg = cfg
 	return nil
 }
 
@@ -194,6 +199,19 @@ func (n *Node) InitNodeWorker(worker INodeWorker) error {
 	}
 	n.properties = properties
 	return nil
+}
+
+// CopyTo 拷贝所有成员到 target @implement INode.CopyTo
+//
+// @receiver n
+// @param target 新的零值 Node
+func (n *Node) CopyTo(target *Node) {
+	target.category = n.category
+	target.title = n.title
+	target.delegator = n.delegator
+	target.name = n.name
+	target.properties = n.properties
+	target.id = util.NanoID()
 }
 
 // NodeWorker
@@ -225,6 +243,9 @@ func (n *Node) Memory(brain IBrain) *NodeMemory {
 	return brain.Blackboard().(IBlackboardInternal).NodeMemory(n.id)
 }
 
+func (n *Node) RawCfg() *config.NodeCfg {
+	return n.cfg
+}
 func (n *Node) Delegator() config.DelegatorCfg {
 	return n.delegator
 }
@@ -270,8 +291,11 @@ func (n *Node) IsAborting(brain IBrain) bool {
 //	@receiver n
 //	@return IContainer
 func (n *Node) Parent(brain IBrain) IContainer {
+	if brain == nil {
+		return n.parent
+	}
 	// 注意行为树是单例,故动态挂载的节点从黑板获取父节点,目前只有root可以
-	if n.INodeWorker.CanMounted() {
+	if n.INodeWorker.CanMountTo() {
 		mountParent := brain.Blackboard().(IBlackboardInternal).NodeMemory(n.id).MountParent
 		// 不为空为动态挂载,否则为静态挂载
 		if mountParent != nil {
@@ -297,7 +321,7 @@ func (n *Node) SetParent(parent IContainer) {
 //	@param brain
 //	@param parent
 func (n *Node) DynamicMount(brain IBrain, parent IContainer) {
-	if !n.INodeWorker.CanMounted() {
+	if !n.INodeWorker.CanMountTo() {
 		n.Log(brain).Fatal("cannot mount for this node")
 		return
 	}
@@ -475,7 +499,6 @@ func (n *Node) OnAbort(brain IBrain) {
 //	@param brain
 //	@param composite
 func (n *Node) OnCompositeAncestorFinished(brain IBrain, composite IComposite) {
-	// n.Log(brain).Debug(" OnCompositeAncestorFinished")
 }
 
 // PropertiesClassProvider
@@ -487,12 +510,12 @@ func (n *Node) PropertiesClassProvider() any {
 	return &map[string]any{}
 }
 
-// CanMounted
+// CanMountTo
 //
-//	@implement INodeWorker.CanMounted
+//	@implement INodeWorker.CanMountTo
 //	@receiver n
 //	@return bool
-func (n *Node) CanMounted() bool {
+func (n *Node) CanMountTo() bool {
 	return false
 }
 

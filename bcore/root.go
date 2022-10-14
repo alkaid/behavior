@@ -3,6 +3,8 @@ package bcore
 import (
 	"time"
 
+	"github.com/alkaid/behavior/logger"
+
 	"github.com/alkaid/behavior/util"
 
 	"github.com/alkaid/behavior/thread"
@@ -39,6 +41,22 @@ type IRoot interface {
 	// Interval 该树默认刷新间隔时间
 	//  @return time.Duration
 	Interval() time.Duration
+	// SafeStart  启动行为树.
+	//
+	//		线程安全
+	// @receiver r
+	// @param brain
+	// SafeStart  启动行为树.
+	//
+	// @param brain
+	// @param force 是否强制启动.若root是激活状态,true则先终止再启动,false则原tree继续运行只报错不重启.
+	SafeStart(brain IBrain, force bool)
+	// SafeAbort 终止行为树
+	//
+	//		线程安全
+	// @param brain
+	// @param abortChan
+	SafeAbort(brain IBrain, abortChan chan *FinishEvent)
 }
 
 var _ IRoot = (*Root)(nil)
@@ -47,12 +65,12 @@ type Root struct {
 	Decorator
 }
 
-// CanMounted
+// CanMountTo
 //
-//	@override Node.CanMounted
+//	@override Node.CanMountTo
 //	@receiver r
 //	@return bool
-func (r *Root) CanMounted() bool {
+func (r *Root) CanMountTo() bool {
 	return true
 }
 
@@ -96,18 +114,34 @@ func (r *Root) SetRoot(brain IBrain, root IRoot) {
 
 // Start 启动行为树.
 //
-//		覆写父类方法以保证线程安全
+//		非线程安全,要线程安全请使用 SafeStart
 //	 @implement INode.Start
 //	 @receiver n
 //	 @param brain
 func (r *Root) Start(brain IBrain) {
-	thread.GoByID(brain.Blackboard().(IBlackboardInternal).ThreadID(), func() {
-		if r.IsSubTree(brain) {
-			r.Decorator.Start(brain)
-			return
-		}
-		brain.(IBrainInternal).SetRunningTree(r)
+	if r.IsSubTree(brain) {
 		r.Decorator.Start(brain)
+		return
+	}
+	brain.(IBrainInternal).SetRunningTree(r)
+	r.Decorator.Start(brain)
+}
+
+// SafeStart
+//
+// @implement IRoot.SafeStart
+// @receiver r
+// @param brain
+func (r *Root) SafeStart(brain IBrain, force bool) {
+	if r.IsSubTree(brain) {
+		logger.Log.Error("SafeStart unSupport subtree")
+		return
+	}
+	thread.GoByID(brain.Blackboard().(IBlackboardInternal).ThreadID(), func() {
+		if force && r.IsActive(brain) {
+			r.Abort(brain)
+		}
+		r.Start(brain)
 	})
 }
 
@@ -125,19 +159,32 @@ func (r *Root) OnStart(brain IBrain) {
 	r.Decorated(brain).Start(brain)
 }
 
-// Abort 终止行为树
+// SafeAbort
 //
-//		覆写父类方法以保证线程安全
-//	 @implement INode.Abort
-//	 @receiver n
-//	 @param brain
-func (r *Root) Abort(brain IBrain) {
+// @implement IRoot.SafeAbort
+// @receiver r
+// @param brain
+// @param abortChan
+func (r *Root) SafeAbort(brain IBrain, abortChan chan *FinishEvent) {
+	if r.IsSubTree(brain) {
+		logger.Log.Error("SafeAbort unSupport subtree")
+		return
+	}
 	thread.GoByID(brain.Blackboard().(IBlackboardInternal).ThreadID(), func() {
-		if r.IsSubTree(brain) {
-			r.Decorator.Abort(brain)
+		event := &FinishEvent{
+			IsAbort:   true,
+			Succeeded: false,
+		}
+		if !r.IsActive(brain) {
+			if abortChan != nil {
+				abortChan <- event
+			}
 			return
 		}
 		r.Decorator.Abort(brain)
+		if abortChan != nil {
+			abortChan <- event
+		}
 	})
 }
 
@@ -167,12 +214,12 @@ func (r *Root) OnChildFinished(brain IBrain, child INode, succeeded bool) {
 	r.Decorator.OnChildFinished(brain, child, succeeded)
 	// 如果是外部触发中断的,结束运行
 	if r.Memory(brain).State == NodeStateAborting {
+		// 无论是否子树都要结束root,若是子树将回溯parent,否则整棵行为树终止运行。
+		r.Finish(brain, succeeded)
 		// 非子树要关闭黑板监听
 		if !r.IsSubTree(brain) {
 			brain.Blackboard().(IBlackboardInternal).Stop()
 		}
-		// 无论是否子树都要结束root,若是子树将回溯parent,否则整棵行为树终止运行。
-		r.Finish(brain, succeeded)
 	} else {
 		// 如果是正常结束，判断是否子树,子树则正常结束当前root
 		// 如果配置了一次性运行,同上
@@ -180,8 +227,8 @@ func (r *Root) OnChildFinished(brain IBrain, child INode, succeeded bool) {
 			r.Finish(brain, succeeded)
 		} else if r.properties.(iRootProperties).IsOnce() {
 			// 若是主树且是一次性,结束root并关闭监听
-			brain.Blackboard().(IBlackboardInternal).Stop()
 			r.Finish(brain, succeeded)
+			brain.Blackboard().(IBlackboardInternal).Stop()
 		} else {
 			// 若是主树且可以循环，开启下一轮
 			// 不能直接 Start(),会堆栈溢出且阻塞其他分支,应该重新异步派发

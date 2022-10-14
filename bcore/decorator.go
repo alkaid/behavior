@@ -72,7 +72,7 @@ func (d *Decorator) Decorate(decorated INode) {
 //	@receiver d
 //	@return INode
 func (d *Decorator) Decorated(brain IBrain) INode {
-	if !d.IDecoratorWorker.CanDynamicDecorate() {
+	if brain == nil || !d.IDecoratorWorker.CanDynamicDecorate() {
 		return d.decorated
 	}
 	dynamicDecorated := d.Memory(brain).DynamicChild

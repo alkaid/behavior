@@ -50,6 +50,9 @@ func (c *TreeCfg) Valid() error {
 	if c.Root == "" {
 		return errors.New("root cannot be nil")
 	}
+	if c.Tag == "" {
+		return errors.New("tag cannot be nil")
+	}
 	if len(c.Nodes) == 0 {
 		return errors.New("nodes length is zero")
 	}
