@@ -119,19 +119,23 @@ func (b *Brain) Go(task func()) {
 	thread.GoByID(b.blackboard.(bcore.IBlackboardInternal).ThreadID(), task)
 }
 
+// Abort @implement bcore.IBrain .Abort
+//
+// @receiver b
+// @param abortChan
 func (b *Brain) Abort(abortChan chan *bcore.FinishEvent) {
+	// 派发到自己的线程
 	b.Go(func() {
 		event := &bcore.FinishEvent{
 			IsAbort:   true,
 			Succeeded: false,
+			IsActive:  true,
 		}
 		if !b.Running() || !b.RunningTree().IsActive(b) {
 			logger.Log.Warn("brain not running,can not abort")
 			if abortChan != nil {
-				abortChan <- &bcore.FinishEvent{
-					IsAbort:   true,
-					Succeeded: false,
-				}
+				event.IsActive = false
+				abortChan <- event
 			}
 			return
 		}
@@ -159,7 +163,7 @@ func (b *Brain) Run(tag string, force bool) {
 	})
 }
 
-// DynamicDecorate 给正在运行的树动态挂载子树
+// DynamicDecorate 给正在运行的树动态挂载子树.暂时只支持主树上的动态容器
 //
 //	非线程安全,调用方自己保证
 //
@@ -171,7 +175,8 @@ func (b *Brain) DynamicDecorate(containerTag string, subtreeTag string) error {
 	if !b.Running() || !b.RunningTree().IsActive(b) {
 		return errors.New(fmt.Sprintf("brain can not dynamic decorate cause not running tree,containerTag=%s,subtreeTag=%s", containerTag, subtreeTag))
 	}
-	maintree := GlobalTreeRegistry().TreesByID[b.RunningTree().ID()]
+	registry := GlobalTreeRegistry()
+	maintree := registry.TreesByID[b.RunningTree().ID()]
 	if maintree == nil {
 		return errors.New(fmt.Sprintf("brain can not dynamic decorate cause not main tree,containerTag=%s,subtreeTag=%s", containerTag, subtreeTag))
 	}
@@ -179,13 +184,19 @@ func (b *Brain) DynamicDecorate(containerTag string, subtreeTag string) error {
 	if container == nil {
 		return errors.New(fmt.Sprintf("brain can not dynamic decorate cause not dynamic container,containerTag=%s,subtreeTag=%s", containerTag, subtreeTag))
 	}
-	subtree, _, err := GlobalTreeRegistry().getNotDynamicParentTree(subtreeTag, b)
+	// 当前子树就是想要挂载的子树,不再执行动态替换
+	childRoot := container.Decorated(b)
+	if childRoot != nil && registry.TreesByID[childRoot.ID()].Tag == subtreeTag {
+		return nil
+	}
+	subtree, _, err := registry.getNotDynamicParentTree(subtreeTag, container, b)
 	if err != nil {
 		return err
 	}
 	if subtree == nil {
 		return errors.New(fmt.Sprintf("brain can not dynamic decorate cause not enough subtree,containerTag=%s,subtreeTag=%s", containerTag, subtreeTag))
 	}
+
 	container.DynamicDecorate(b, subtree.Root)
 	return nil
 }
@@ -216,7 +227,7 @@ func (b *Brain) OnNodeUpdate(target string, method string, brain bcore.IBrain, e
 	log = log.With(zap.Int("methodType", int(handler.MethodType)))
 	switch handler.MethodType {
 	case handle.MtFullStyle:
-		_, rets, err = GlobalHandlerPool().ProcessHandler(handler, meta.ReflectValue, brain, eventType, delta)
+		_, rets, err = GlobalHandlerPool().ProcessHandler(handler, meta.ReflectValue, eventType, delta)
 	default:
 		_, rets, err = GlobalHandlerPool().ProcessHandler(handler, meta.ReflectValue)
 	}

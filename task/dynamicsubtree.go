@@ -85,7 +85,6 @@ func (t *DynamicSubtree) DynamicDecorate(brain bcore.IBrain, decorated bcore.IRo
 	if t.IsAborting(brain) {
 		return
 	}
-	// 保证线程安全
 	switch t.Properties().(IDynamicSubtreeProperties).GetRunMode() {
 	case bcore.DynamicBehaviorModeContinue:
 		return
@@ -106,8 +105,9 @@ func (t *DynamicSubtree) DynamicDecorate(brain bcore.IBrain, decorated bcore.IRo
 //	@param succeeded
 func (t *DynamicSubtree) OnChildFinished(brain bcore.IBrain, child bcore.INode, succeeded bool) {
 	t.Decorator.OnChildFinished(brain, child, succeeded)
-	if !t.Memory(brain).Restarting {
+	if t.Memory(brain).Restarting {
+		t.Start(brain)
 		return
 	}
-	t.Start(brain)
+	t.Finish(brain, succeeded)
 }

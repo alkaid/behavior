@@ -20,7 +20,7 @@ type IServiceProperties interface {
 // ServiceProperties 服务节点属性
 type ServiceProperties struct {
 	Interval        util.Duration `json:"interval"`        // 执行间隔，配0则为行为树默认时间轮间隔
-	RandomDeviation util.Duration `json:"randomDeviation"` // 随机偏差:将一个随机范围数值添加至服务节点的 时间间隔（Interval） 值。
+	RandomDeviation util.Duration `json:"randomDeviation"` // 随机偏差:将一个随机范围数值添加至服务节点的 时间间隔 Interval 。Interval = Interval + RandomDeviation * [-0.5,0.5)
 }
 
 func (s *ServiceProperties) GetInterval() time.Duration {
@@ -71,6 +71,16 @@ func (s *Service) OnStart(brain bcore.IBrain) {
 	}, timingwheel.WithGoID(brain.Blackboard().(bcore.IBlackboardInternal).ThreadID()))
 	s.Update(brain, bcore.EventTypeOnStart, 0)
 	s.Decorated(brain).Start(brain)
+}
+
+// OnAbort
+//
+//	@override Node.OnAbort
+//	@receiver n
+//	@param brain
+func (s *Service) OnAbort(brain bcore.IBrain) {
+	s.Decorator.OnAbort(brain)
+	s.stopTimer(brain)
 }
 
 // OnChildFinished

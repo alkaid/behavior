@@ -125,3 +125,5 @@ func (d *Decorator) Finish(brain IBrain, succeeded bool) {
 	}
 	d.Container.Finish(brain, succeeded)
 }
+
+// 这里本来应该override OnChildFinish()并调用 c.Finish() 但是每种派生子类的逻辑都不太一样,很多在c.Finish()之前还有一些其他的收尾工作，故由子类自行调用Finish

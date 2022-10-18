@@ -79,6 +79,7 @@ func (a *Action) OnStart(brain bcore.IBrain) {
 //	@param brain
 func (a *Action) OnAbort(brain bcore.IBrain) {
 	a.Task.OnAbort(brain)
+	a.stopTimer(brain)
 	// 中断时最后调用一次委托
 	result := a.Update(brain, bcore.EventTypeOnAbort, 0)
 	if result == bcore.ResultInProgress {

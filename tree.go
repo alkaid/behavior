@@ -24,12 +24,12 @@ type Tree struct {
 	AllSubtreeMounted bool                            // 是否所有子树已经全部挂载完(不包括childTag为空的)
 }
 
-// Clone 拷贝整个树
+// clone 拷贝整个树,不会注册。要注册请调用 TreeRegistry.Clone
 //
 // @receiver t
 // @return *Tree
 // @return error
-func (t *Tree) Clone() (*Tree, error) {
+func (t *Tree) clone() (*Tree, error) {
 	tree := &Tree{
 		Tag:             t.Tag,
 		Ver:             t.Ver,
@@ -53,10 +53,12 @@ func (t *Tree) backtrackingClone(originNode bcore.INode, newTree *Tree) (bcore.I
 	case bcore.NodeNameSubtree:
 		dst, _ := newNode.(task.ISubtree)
 		newTree.StaticSubtrees[dst.ID()] = dst
+		newNode.SetRoot(nil, newTree.Root)
 		return newNode, nil
 	case bcore.NodeNameDynamicSubtree:
 		dst, _ := newNode.(task.IDynamicSubtree)
 		newTree.DynamicSubtrees[dst.Tag()] = dst
+		newNode.SetRoot(nil, newTree.Root)
 		return newNode, nil
 	}
 	// 非container类型 终止
@@ -68,23 +70,28 @@ func (t *Tree) backtrackingClone(originNode bcore.INode, newTree *Tree) (bcore.I
 		newTree.Root = newNode.(bcore.IRoot)
 	}
 	// 处理子节点
-	var children []bcore.INode
 	switch v := originNode.(type) {
 	case bcore.IComposite:
-		children = v.Children()
+		for _, child := range v.Children() {
+			newChild, err := t.backtrackingClone(child, newTree)
+			if err != nil {
+				return nil, err
+			}
+			newNode.(bcore.IComposite).AddChild(newChild)
+		}
 	case bcore.IDecorator:
-		children = append(children, v.Decorated(nil))
+		child := v.Decorated(nil)
+		if child != nil {
+			newChild, err := t.backtrackingClone(child, newTree)
+			if err != nil {
+				return nil, err
+			}
+			newNode.(bcore.IDecorator).Decorate(newChild)
+		}
 	default:
 		return nil, errors.New(fmt.Sprintf("unSupport category:%s", originNode.Category()))
 	}
-	for _, child := range children {
-		newChild, err := t.backtrackingClone(child, newTree)
-		if err != nil {
-			return nil, err
-		}
-		newChild.SetRoot(nil, newTree.Root)
-		newChild.SetParent(newNode.(bcore.IContainer))
-	}
+	newNode.SetRoot(nil, newTree.Root)
 	return newNode, nil
 }
 
@@ -99,6 +106,21 @@ func NewTreeRegistry() *TreeRegistry {
 		TreesByID:  map[string]*Tree{},
 		TreesByTag: map[string][]*Tree{},
 	}
+}
+
+// Clone 拷贝树并注册
+//
+// @receiver r
+// @param src
+// @return error
+func (r *TreeRegistry) Clone(src *Tree) (*Tree, error) {
+	dst, err := src.clone()
+	if err != nil {
+		return dst, err
+	}
+	r.TreesByID[dst.Root.ID()] = dst
+	r.TreesByTag[dst.Tag] = append(r.TreesByTag[dst.Tag], dst)
+	return dst, nil
 }
 
 func (r *TreeRegistry) LoadFromPaths(paths []string) error {
@@ -285,7 +307,7 @@ func (r *TreeRegistry) getNotParentTree(tag string) (utree *Tree, cloned bool, e
 			return tree, false, nil
 		}
 	}
-	child, err := r.TreesByTag[tag][0].Clone()
+	child, err := r.Clone(r.TreesByTag[tag][0])
 	if err != nil {
 		return nil, false, err
 	}
@@ -300,17 +322,32 @@ func (r *TreeRegistry) getNotParentTree(tag string) (utree *Tree, cloned bool, e
 // @return utree
 // @return cloned
 // @return err
-func (r *TreeRegistry) getNotDynamicParentTree(tag string, brain bcore.IBrain) (utree *Tree, cloned bool, err error) {
+func (r *TreeRegistry) getNotDynamicParentTree(tag string, container task.IDynamicSubtree, brain bcore.IBrain) (utree *Tree, cloned bool, err error) {
+	// 若正在挂载的子树就是需要的子树tag,直接返回
+	root := container.Decorated(brain)
+	if root != nil && r.TreesByID[root.ID()].Tag == tag {
+		return r.TreesByID[root.ID()], false, nil
+	}
 	if len(r.TreesByTag[tag]) == 0 {
 		return nil, false, nil
 	}
+	// 优先返回父容器id相同的未激活的子树
 	for _, tree := range r.TreesByTag[tag] {
 		parent := brain.Blackboard().(bcore.IBlackboardInternal).NodeMemory(tree.Root.ID()).MountParent
+		if parent != nil && parent.ID() == container.ID() && parent.IsInactive(brain) {
+			return tree, false, nil
+		}
+	}
+	// 找不到的话返回还未挂载的
+	for _, tree := range r.TreesByTag[tag] {
+		parent := brain.Blackboard().(bcore.IBlackboardInternal).NodeMemory(tree.Root.ID()).MountParent
+		// 自己未挂载过就可以用 即使其他brain挂载了也没关系,因为挂载数据隔离
 		if parent == nil {
 			return tree, false, nil
 		}
 	}
-	child, err := r.TreesByTag[tag][0].Clone()
+	// 再找不到的话拷贝一个
+	child, err := r.Clone(r.TreesByTag[tag][0])
 	if err != nil {
 		return nil, false, err
 	}

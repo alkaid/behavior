@@ -175,7 +175,7 @@ func (n *NonParallel) AbortLowerPriorityChildrenForChild(brain bcore.IBrain, chi
 			idx = i
 		}
 		// 找到正在运行的第一个右侧节点,中断掉
-		if idx > 0 && currChild.IsActive(brain) {
+		if idx > -1 && currChild.IsActive(brain) {
 			n.SetCurrIdx(brain, idx-1)
 			currChild.Abort(brain)
 			break
@@ -183,5 +183,5 @@ func (n *NonParallel) AbortLowerPriorityChildrenForChild(brain bcore.IBrain, chi
 	}
 }
 func (n *NonParallel) OnString(brain bcore.IBrain) string {
-	return fmt.Sprintf("%s[%d-%s]", n.Composite.OnString(brain), n.CurrChildIdx(brain), n.CurrChild(brain).Title())
+	return fmt.Sprintf("%s[%d]", n.Composite.OnString(brain), n.CurrChildIdx(brain))
 }

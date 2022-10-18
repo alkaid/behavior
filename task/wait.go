@@ -21,7 +21,7 @@ type IWaitProperties interface {
 // WaitProperties 等待属性
 type WaitProperties struct {
 	WaitTime        util.Duration `json:"waitTime"`        // 等待时间
-	RandomDeviation util.Duration `json:"randomDeviation"` // 随机偏差:允许向 等待时间（Wait Time） 属性添加随机时间（正或负）
+	RandomDeviation util.Duration `json:"randomDeviation"` // 随机偏差:允许向 等待时间 WaitTime 属性添加随机时间。 WaitTime = WaitTime + RandomDeviation * [-0.5,0.5)
 	Forever         bool          `json:"forever"`         // 永久等待直到被外界打断
 	ResultOnAbort   bool          `json:"resultOnAbort"`   // 中断时返回成功还是失败,默认false
 }

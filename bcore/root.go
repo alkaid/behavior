@@ -3,6 +3,9 @@ package bcore
 import (
 	"time"
 
+	"github.com/alkaid/behavior/timer"
+	"github.com/alkaid/timingwheel"
+
 	"github.com/alkaid/behavior/logger"
 
 	"github.com/alkaid/behavior/util"
@@ -16,13 +19,17 @@ import (
 type iRootProperties interface {
 	IsOnce() bool
 	GetInterval() time.Duration
+	GetLoopInterval() time.Duration
+	GetRandomDeviation() time.Duration
 }
 
 // rootProperties 根节点属性
 type rootProperties struct {
 	BaseProperties
-	Once     bool          `json:"once"`     // 是否仅运行一次,反之永远循环
-	Interval util.Duration `json:"interval"` // 默认更新间隔
+	Once            bool          `json:"once"`            // 是否仅运行一次,反之永远循环
+	Interval        util.Duration `json:"interval"`        // 默认帧率(每帧更新间隔,默认50ms)
+	LoopInterval    util.Duration `json:"loopInterval"`    // 每次运行之间的间隔
+	RandomDeviation util.Duration `json:"randomDeviation"` // 每次运行随机偏差: LoopInterval = LoopInterval + RandomDeviation*[-0.5,0.5)
 }
 
 func (r *rootProperties) IsOnce() bool {
@@ -30,6 +37,12 @@ func (r *rootProperties) IsOnce() bool {
 }
 func (r *rootProperties) GetInterval() time.Duration {
 	return r.Interval.Duration
+}
+func (r *rootProperties) GetLoopInterval() time.Duration {
+	return r.LoopInterval.Duration
+}
+func (r *rootProperties) GetRandomDeviation() time.Duration {
+	return r.RandomDeviation.Duration
 }
 
 type IRoot interface {
@@ -174,9 +187,11 @@ func (r *Root) SafeAbort(brain IBrain, abortChan chan *FinishEvent) {
 		event := &FinishEvent{
 			IsAbort:   true,
 			Succeeded: false,
+			IsActive:  true,
 		}
 		if !r.IsActive(brain) {
 			if abortChan != nil {
+				event.IsActive = false
 				abortChan <- event
 			}
 			return
@@ -195,12 +210,8 @@ func (r *Root) SafeAbort(brain IBrain, abortChan chan *FinishEvent) {
 //	@param brain
 func (r *Root) OnAbort(brain IBrain) {
 	r.Decorator.OnAbort(brain)
-	if r.IsActive(brain) {
-		r.Decorated(brain).Abort(brain)
-		return
-	}
-	// TODO 这里是否有异步异常情况未考虑
-	r.Log(brain).Warn("can only abort active root")
+	r.startTimer(brain)
+	r.Decorated(brain).Abort(brain)
 }
 
 // OnChildFinished
@@ -212,6 +223,7 @@ func (r *Root) OnAbort(brain IBrain) {
 //	@param succeeded
 func (r *Root) OnChildFinished(brain IBrain, child INode, succeeded bool) {
 	r.Decorator.OnChildFinished(brain, child, succeeded)
+	r.stopTimer(brain)
 	// 如果是外部触发中断的,结束运行
 	if r.Memory(brain).State == NodeStateAborting {
 		// 无论是否子树都要结束root,若是子树将回溯parent,否则整棵行为树终止运行。
@@ -232,9 +244,7 @@ func (r *Root) OnChildFinished(brain IBrain, child INode, succeeded bool) {
 		} else {
 			// 若是主树且可以循环，开启下一轮
 			// 不能直接 Start(),会堆栈溢出且阻塞其他分支,应该重新异步派发
-			thread.GoByID(brain.Blackboard().(IBlackboardInternal).ThreadID(), func() {
-				r.Decorated(brain).Start(brain)
-			})
+			r.startTimer(brain)
 		}
 	}
 }
@@ -256,8 +266,24 @@ func (r *Root) Finish(brain IBrain, succeeded bool) {
 	event := &FinishEvent{
 		IsAbort:   isAborting,
 		Succeeded: succeeded,
+		IsActive:  true,
 	}
 	if brain.FinishChan() != nil {
 		brain.(IBrainInternal).RWFinishChan() <- event
+	}
+}
+
+func (r *Root) startTimer(brain IBrain) {
+	r.Memory(brain).CronTask = timer.After(r.properties.(iRootProperties).GetLoopInterval(),
+		r.properties.(iRootProperties).GetRandomDeviation(),
+		func() {
+			r.Decorated(brain).Start(brain)
+		},
+		timingwheel.WithGoID(brain.Blackboard().(IBlackboardInternal).ThreadID()))
+}
+func (r *Root) stopTimer(brain IBrain) {
+	if r.Memory(brain).CronTask != nil {
+		r.Memory(brain).CronTask.Stop()
+		r.Memory(brain).CronTask = nil
 	}
 }

@@ -54,6 +54,7 @@ type INode interface {
 	// HasDelegatorOrScript 是否存在委托方法或脚本
 	//  @return bool
 	HasDelegatorOrScript() bool
+	State(brain IBrain) NodeState
 	IsActive(brain IBrain) bool
 	IsInactive(brain IBrain) bool
 	IsAborting(brain IBrain) bool
@@ -273,7 +274,9 @@ func (n *Node) Category() string {
 func (n *Node) Properties() any {
 	return n.properties
 }
-
+func (n *Node) State(brain IBrain) NodeState {
+	return brain.Blackboard().(IBlackboardInternal).NodeMemory(n.id).State
+}
 func (n *Node) IsActive(brain IBrain) bool {
 	return brain.Blackboard().(IBlackboardInternal).NodeMemory(n.id).State == NodeStateActive
 }
@@ -530,7 +533,7 @@ func (n *Node) OnString(brain IBrain) string {
 
 func (n *Node) Log(brain IBrain) *zap.Logger {
 	if brain != nil {
-		return logger.Log.With(zap.Int("id", brain.Blackboard().(IBlackboardInternal).ThreadID()), zap.String("name", n.name), zap.String("title", n.title))
+		return logger.Log.With(zap.Int("id", brain.Blackboard().(IBlackboardInternal).ThreadID()), zap.String("name", n.name), zap.String("title", n.title), zap.Int("state", int(n.State(brain))))
 	}
 	return logger.Log.With(zap.String("name", n.name), zap.String("title", n.title))
 }

@@ -31,8 +31,8 @@ var (
 	typeOfDuration  = reflect.TypeOf(time.Duration(0))
 	typeOfEventType = reflect.TypeOf(bcore.EventType(0))
 	typeOfResult    = reflect.TypeOf(bcore.Result(0))
-	typeOfBrain     = reflect.TypeOf((*bcore.IBrain)(nil)).Elem()
-	typeOfError     = reflect.TypeOf((*error)(nil)).Elem()
+	// unused:typeOfBrain     = reflect.TypeOf((*bcore.IBrain)(nil)).Elem()
+	typeOfError = reflect.TypeOf((*error)(nil)).Elem()
 )
 
 // MethodType 支持的方法签名类型
@@ -47,7 +47,7 @@ const (
 )
 
 const (
-	numInFullStyle  = 4
+	numInFullStyle  = 3
 	numOutFullStyle = 1
 	numInSimple     = 1
 )
@@ -61,13 +61,11 @@ func isHandlerMethod(method reflect.Method) MethodType {
 	}
 	// 需要4个入参: receiver,Brain EventType, delta
 	if mt.NumIn() == numInFullStyle {
-		if t1 := mt.In(1); t1.Kind() != reflect.Interface || !t1.Implements(typeOfBrain) {
+		// Note maybe: if t1 := mt.In(1); t1.Kind() != reflect.Interface || !t1.Implements(typeOfBrain) {	return MtNone}
+		if t1 := mt.In(1); t1 != typeOfEventType {
 			return MtNone
 		}
-		if t1 := mt.In(2); t1 != typeOfEventType {
-			return MtNone
-		}
-		if t1 := mt.In(3); t1 != typeOfDuration {
+		if t1 := mt.In(2); t1 != typeOfDuration {
 			return MtNone
 		}
 		// 需要1个出参: Result,error

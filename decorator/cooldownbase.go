@@ -22,7 +22,7 @@ type CooldownBaseProperties struct {
 	StartAfterDecorated bool          `json:"startAfterDecorated"` // 是否在子节点完成后才进入cd
 	ResetOnFailure      bool          `json:"resetOnFailure"`      // 子节点取消后是否重置cd
 	FailOnCoolDown      bool          `json:"failOnCoolDown"`      // true:cd时间未到却被请求执行时停用当前节点并返回false false:什么都不做
-	RandomDeviation     util.Duration `json:"randomDeviation"`     // 随机偏差:将一个随机范围数值添加至服务节点的 冷却时间（cooldownTime） 值。
+	RandomDeviation     util.Duration `json:"randomDeviation"`     // 随机偏差:冷却时间 ICooldownBaseWorker.CooldownTime = CooldownTime + RandomDeviation*[-0.5,0.5)
 }
 
 func (p *CooldownBaseProperties) GetStartAfterDecorated() bool {
@@ -42,7 +42,8 @@ func (p *CooldownBaseProperties) GetRandomDeviation() time.Duration {
 }
 
 // CooldownBase cd等待装饰器
-//  每次子节点完成后将等待一段时间才能再次执行
+//
+//	每次子节点完成后将等待一段时间才能再次执行
 type CooldownBase struct {
 	bcore.Decorator
 	ICooldownBaseWorker
@@ -55,18 +56,20 @@ type ICooldownBaseWorker interface {
 }
 
 // InitNodeWorker
-//  @override Node.InitNodeWorker
-//  @receiver c
-//  @param worker
+//
+//	@override Node.InitNodeWorker
+//	@receiver c
+//	@param worker
 func (b *CooldownBase) InitNodeWorker(worker bcore.INodeWorker) error {
 	b.ICooldownBaseWorker = worker.(ICooldownBaseWorker)
 	return b.Decorator.InitNodeWorker(worker)
 }
 
 // PropertiesClassProvider
-//  @implement INodeWorker.PropertiesClassProvider
-//  @receiver n
-//  @return any
+//
+//	@implement INodeWorker.PropertiesClassProvider
+//	@receiver n
+//	@return any
 func (b *CooldownBase) PropertiesClassProvider() any {
 	return &CooldownBaseProperties{}
 }
@@ -76,9 +79,10 @@ func (b *CooldownBase) CooldownProperties() ICooldownBaseProperties {
 }
 
 // OnStart
-//  @override Node.OnStart
-//  @receiver n
-//  @param brain
+//
+//	@override Node.OnStart
+//	@receiver n
+//	@param brain
 func (b *CooldownBase) OnStart(brain bcore.IBrain) {
 	b.Decorator.OnStart(brain)
 	if !b.Memory(brain).Cooling {
@@ -95,9 +99,10 @@ func (b *CooldownBase) OnStart(brain bcore.IBrain) {
 }
 
 // OnAbort
-//  @override Node.OnAbort
-//  @receiver n
-//  @param brain
+//
+//	@override Node.OnAbort
+//	@receiver n
+//	@param brain
 func (b *CooldownBase) OnAbort(brain bcore.IBrain) {
 	b.Decorator.OnAbort(brain)
 	b.Memory(brain).Cooling = false
@@ -110,11 +115,12 @@ func (b *CooldownBase) OnAbort(brain bcore.IBrain) {
 }
 
 // OnChildFinished
-//  @override bcore.Decorator .OnChildFinished
-//  @receiver s
-//  @param brain
-//  @param child
-//  @param succeeded
+//
+//	@override bcore.Decorator .OnChildFinished
+//	@receiver s
+//	@param brain
+//	@param child
+//	@param succeeded
 func (b *CooldownBase) OnChildFinished(brain bcore.IBrain, child bcore.INode, succeeded bool) {
 	b.Decorator.OnChildFinished(brain, child, succeeded)
 	if !succeeded && b.CooldownProperties().GetResetOnFailure() {

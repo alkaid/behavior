@@ -20,7 +20,7 @@ type ITimeMaxProperties interface {
 // TimeMaxProperties 最大时限装饰器属性
 type TimeMaxProperties struct {
 	Limit               util.Duration `json:"limit"`               // 最大时限
-	RandomDeviation     util.Duration `json:"randomDeviation"`     // 随机偏差:将一个随机范围数值添加至服务节点的 冷却时间（cooldownTime） 值。
+	RandomDeviation     util.Duration `json:"randomDeviation"`     // 随机偏差:将一个随机范围数值添加至服务节点的 Limit 值。Limit = Limit + RandomDeviation * [-0.5,0.5)
 	WaitForChildButFail bool          `json:"waitForChildButFail"` // true:超时后依然等待子节点完成,但将修改结果为失败 false:超时后立即关闭子节点
 }
 

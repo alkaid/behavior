@@ -1,5 +1,7 @@
 package bcore
 
+import "go.uber.org/zap"
+
 // IContainer 容器:可以挂载子节点的节点
 type IContainer interface {
 	INode
@@ -51,7 +53,7 @@ func (c *Container) InitNodeWorker(worker INodeWorker) error {
 //	@param child
 //	@param succeeded
 func (c *Container) OnChildFinished(brain IBrain, child INode, succeeded bool) {
-	c.Log(brain).Debug(c.String(brain) + " OnChildFinished")
+	c.Log(brain).Debug("OnChildFinished", zap.String("child", child.Title()), zap.Bool("succeeded", succeeded), zap.String("content", c.String(brain)))
 }
 
 // ChildFinished
