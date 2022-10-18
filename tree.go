@@ -24,7 +24,7 @@ type Tree struct {
 	AllSubtreeMounted bool                            // 是否所有子树已经全部挂载完(不包括childTag为空的)
 }
 
-// clone 拷贝整个树,不会注册。要注册请调用 TreeRegistry.Clone
+// clone 拷贝整个树,不会注册。要注册请调用 TreeRegistry.CloneAndReg
 //
 // @receiver t
 // @return *Tree
@@ -108,12 +108,12 @@ func NewTreeRegistry() *TreeRegistry {
 	}
 }
 
-// Clone 拷贝树并注册
+// CloneAndReg 拷贝树并注册
 //
 // @receiver r
 // @param src
 // @return error
-func (r *TreeRegistry) Clone(src *Tree) (*Tree, error) {
+func (r *TreeRegistry) CloneAndReg(src *Tree) (*Tree, error) {
 	dst, err := src.clone()
 	if err != nil {
 		return dst, err
@@ -272,6 +272,13 @@ func (r *TreeRegistry) MountAll() error {
 			return err
 		}
 	}
+	for _, tree := range r.TreesByID {
+		for _, subtree := range tree.StaticSubtrees {
+			if subtree.Decorated(nil) == nil {
+				logger.Log.Error("subtree not found", zap.String("tag", subtree.GetPropChildTag()), zap.String("desc", subtree.String(nil)))
+			}
+		}
+	}
 	return nil
 }
 
@@ -307,7 +314,7 @@ func (r *TreeRegistry) getNotParentTree(tag string) (utree *Tree, cloned bool, e
 			return tree, false, nil
 		}
 	}
-	child, err := r.Clone(r.TreesByTag[tag][0])
+	child, err := r.CloneAndReg(r.TreesByTag[tag][0])
 	if err != nil {
 		return nil, false, err
 	}
@@ -347,7 +354,7 @@ func (r *TreeRegistry) getNotDynamicParentTree(tag string, container task.IDynam
 		}
 	}
 	// 再找不到的话拷贝一个
-	child, err := r.Clone(r.TreesByTag[tag][0])
+	child, err := r.CloneAndReg(r.TreesByTag[tag][0])
 	if err != nil {
 		return nil, false, err
 	}
@@ -371,7 +378,11 @@ func (r *TreeRegistry) mountAllSubtree(tree *Tree) error {
 		tag := container.GetPropChildTag()
 		// 无子树tag配置,不挂载
 		if tag == "" {
-			return nil
+			if container.CanDynamicDecorate() {
+				return nil
+			}
+			err := errors.New(fmt.Sprintf("tag cannot empty,container is %s", container.String(nil)))
+			return err
 		}
 		child, cloned, err := r.getNotParentTree(tag)
 		if err != nil {
@@ -381,7 +392,8 @@ func (r *TreeRegistry) mountAllSubtree(tree *Tree) error {
 		// 找不到子树 可能还没加载
 		if child == nil {
 			allMounted = false
-			return nil
+			err = errors.New(fmt.Sprintf("cannot find subtree,containerTag=%s", tag))
+			return err
 		}
 		// 找到子树,装饰
 		container.Decorate(child.Root)
@@ -389,8 +401,6 @@ func (r *TreeRegistry) mountAllSubtree(tree *Tree) error {
 		if !cloned {
 			return nil
 		}
-		r.TreesByTag[tag] = append(r.TreesByTag[tag], child)
-		r.TreesByID[child.Root.ID()] = child
 		return r.mountAllSubtree(child)
 	}
 	for _, container := range tree.StaticSubtrees {

@@ -71,9 +71,8 @@ func (t *Subtree) OnStart(brain bcore.IBrain) {
 	t.Decorator.OnStart(brain)
 	// 无子节点时默认返回失败
 	if t.Decorated(brain) == nil {
-		if t.GetPropChildID() != "" {
+		if t.GetPropChildID() != "" || t.GetPropChildTag() != "" {
 			t.Log(brain).Error("child not empty in properties,you must decorate child")
-			return
 		}
 		t.Finish(brain, t.SubtreeProperties().GetIsSuccessWhenNotChild())
 		return

@@ -32,7 +32,7 @@ func Float(origin any) (out float64, ok bool) {
 	return out, ok
 }
 
-const defaultNanoIDLen = 32
+const defaultNanoIDLen = 16
 
 // NanoID 随机唯一ID like UUID
 //
