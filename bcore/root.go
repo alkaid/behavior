@@ -210,7 +210,6 @@ func (r *Root) SafeAbort(brain IBrain, abortChan chan *FinishEvent) {
 //	@param brain
 func (r *Root) OnAbort(brain IBrain) {
 	r.Decorator.OnAbort(brain)
-	r.startTimer(brain)
 	r.Decorated(brain).Abort(brain)
 }
 

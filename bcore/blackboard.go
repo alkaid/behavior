@@ -196,14 +196,14 @@ func (b *Blackboard) addOrRmObserver(add bool, key string, observer Observer) {
 				})
 				return
 			}
-			logger.Log.Warn("remove observer failed. observers not contained this observer", zap.String("key", key))
+			logger.Log.Debug("[blackboard]remove observer failed. observers not contained this observer", zap.String("key", key))
 			return
 		}
 		if !contains {
 			b.observers[key] = append(b.observers[key], observer)
 			return
 		}
-		logger.Log.Warn("add observer failed. observers already contained this observer", zap.String("key", key))
+		logger.Log.Debug("[blackboard]add observer failed. observers already contained this observer", zap.String("key", key))
 	})
 }
 

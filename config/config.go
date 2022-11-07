@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/pkg/errors"
 )
@@ -48,10 +49,10 @@ type TreeCfg struct {
 
 func (c *TreeCfg) Valid() error {
 	if c.Root == "" {
-		return errors.New("root cannot be nil")
+		return errors.New(fmt.Sprintf("root cannot be nil,root=%s,tag=%s,desc=%s", c.Root, c.Tag, c.Description))
 	}
 	if c.Tag == "" {
-		return errors.New("tag cannot be nil")
+		return errors.New(fmt.Sprintf("tag cannot be nil,root=%s,tag=%s,desc=%s", c.Root, c.Tag, c.Description))
 	}
 	if len(c.Nodes) == 0 {
 		return errors.New("nodes length is zero")
