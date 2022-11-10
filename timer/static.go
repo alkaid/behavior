@@ -20,6 +20,7 @@ func InitPool(size int, interval time.Duration, numSlots int) {
 		return
 	}
 	pool = NewTimeWheelPool(size, interval, numSlots)
+	pool.Start()
 }
 
 // TimeWheelInstance 从 pool 里获取一个时间轮

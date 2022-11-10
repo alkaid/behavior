@@ -209,7 +209,7 @@ issues:
   # Excluding configuration per-path, per-linter, per-text and per-source
   exclude-rules:
     # Exclude some linters from running on tests files.
-    - path: _test\.go
+    - path: '(.+)_test\.go'
       linters:
         - gocyclo
         - errcheck
@@ -218,6 +218,7 @@ issues:
         - gomnd
         - funlen
         - gocritic
+        - lll
     - linters:
         - errcheck
       source: "^defer "
