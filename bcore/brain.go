@@ -1,6 +1,7 @@
 package bcore
 
 import (
+	"context"
 	"reflect"
 	"time"
 )
@@ -80,4 +81,6 @@ type IBrainInternal interface {
 	GetDelegates() map[string]any
 	RWFinishChan() chan *FinishEvent
 	SetRunningTree(root IRoot)
+	Context() context.Context
+	SetContext(ctx context.Context)
 }

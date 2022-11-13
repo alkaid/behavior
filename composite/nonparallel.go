@@ -123,6 +123,7 @@ func (n *NonParallel) OnStart(brain bcore.IBrain) {
 func (n *NonParallel) OnAbort(brain bcore.IBrain) {
 	n.Composite.OnAbort(brain)
 	// 向下传播给当前活跃子节点
+	n.CurrChild(brain).SetUpstream(brain, n)
 	n.CurrChild(brain).Abort(brain)
 }
 
@@ -177,6 +178,7 @@ func (n *NonParallel) AbortLowerPriorityChildrenForChild(brain bcore.IBrain, chi
 		// 找到正在运行的第一个右侧节点,中断掉
 		if idx > -1 && currChild.IsActive(brain) {
 			n.SetCurrIdx(brain, idx-1)
+			currChild.SetUpstream(brain, n)
 			currChild.Abort(brain)
 			break
 		}

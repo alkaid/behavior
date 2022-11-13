@@ -1,5 +1,7 @@
 package bcore
 
+import "go.uber.org/zap"
+
 // IObservingProperties 观察者装饰器属性
 type IObservingProperties interface {
 	GetAbortMode() AbortMode
@@ -104,6 +106,7 @@ func (o *ObservingDecorator) OnStart(brain IBrain) {
 //	@param brain
 func (o *ObservingDecorator) OnAbort(brain IBrain) {
 	o.Decorator.OnAbort(brain)
+	o.Decorated(brain).SetUpstream(brain, o)
 	o.Decorated(brain).Abort(brain)
 }
 
@@ -152,10 +155,12 @@ func (o *ObservingDecorator) OnCompositeAncestorFinished(brain IBrain, composite
 //	@param args... 透传参数,原样传递给 ConditionMet
 func (o *ObservingDecorator) Evaluate(brain IBrain, args ...any) {
 	conditionMet := o.IObservingWorker.ConditionMet(brain, args...)
+	o.Log(brain).Debug("evaluate", zap.Bool("result", conditionMet))
 	mode := o.AbortMode()
 	// 当条件变为不满足时,根据mode中断自己
 	if o.IsActive(brain) && !conditionMet {
 		if mode == AbortModeSelf || mode == AbortModeBoth {
+			o.SetUpstream(brain, o)
 			o.Abort(brain)
 		}
 		return

@@ -152,6 +152,7 @@ func (r *Root) SafeStart(brain IBrain, force bool) {
 	}
 	thread.GoByID(brain.Blackboard().(IBlackboardInternal).ThreadID(), func() {
 		if force && r.IsActive(brain) {
+			r.SetUpstream(brain, nil)
 			r.Abort(brain)
 		}
 		r.Start(brain)
@@ -196,6 +197,7 @@ func (r *Root) SafeAbort(brain IBrain, abortChan chan *FinishEvent) {
 			}
 			return
 		}
+		r.Decorator.SetUpstream(brain, r)
 		r.Decorator.Abort(brain)
 		if abortChan != nil {
 			abortChan <- event
@@ -210,6 +212,7 @@ func (r *Root) SafeAbort(brain IBrain, abortChan chan *FinishEvent) {
 //	@param brain
 func (r *Root) OnAbort(brain IBrain) {
 	r.Decorator.OnAbort(brain)
+	r.Decorated(brain).SetUpstream(brain, r)
 	r.Decorated(brain).Abort(brain)
 }
 

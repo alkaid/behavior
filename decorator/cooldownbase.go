@@ -108,6 +108,7 @@ func (b *CooldownBase) OnAbort(brain bcore.IBrain) {
 	b.Memory(brain).Cooling = false
 	b.stopTimer(brain)
 	if b.Decorated(brain).IsActive(brain) {
+		b.Decorated(brain).SetUpstream(brain, b)
 		b.Decorated(brain).Abort(brain)
 	} else {
 		b.Finish(brain, false)

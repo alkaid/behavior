@@ -77,6 +77,7 @@ func (m *TimeMin) OnAbort(brain bcore.IBrain) {
 	m.stopTimer(brain)
 	if m.Decorated(brain).IsActive(brain) {
 		m.Memory(brain).LimitReached = true
+		m.Decorated(brain).SetUpstream(brain, m)
 		m.Decorated(brain).Abort(brain)
 	} else {
 		m.Finish(brain, false)

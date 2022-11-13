@@ -19,23 +19,26 @@ func (r *RepeaterProperties) GetTimes() int {
 }
 
 // Repeater 条件装饰器
-//  将根据配置定时检查委托方法，并根据结果（等于或不等）阻止或允许节点的执行。
+//
+//	将根据配置定时检查委托方法，并根据结果（等于或不等）阻止或允许节点的执行。
 type Repeater struct {
 	bcore.Decorator
 }
 
 // PropertiesClassProvider
-//  @implement INodeWorker.PropertiesClassProvider
-//  @receiver n
-//  @return any
+//
+//	@implement INodeWorker.PropertiesClassProvider
+//	@receiver n
+//	@return any
 func (r *Repeater) PropertiesClassProvider() any {
 	return &RepeaterProperties{}
 }
 
 // OnStart
-//  @override Node.OnStart
-//  @receiver n
-//  @param brain
+//
+//	@override Node.OnStart
+//	@receiver n
+//	@param brain
 func (r *Repeater) OnStart(brain bcore.IBrain) {
 	r.Decorator.OnStart(brain)
 	if r.Properties().(IRepeaterProperties).GetTimes() == 0 {
@@ -46,12 +49,14 @@ func (r *Repeater) OnStart(brain bcore.IBrain) {
 }
 
 // OnAbort
-//  @override Node.OnAbort
-//  @receiver n
-//  @param brain
+//
+//	@override Node.OnAbort
+//	@receiver n
+//	@param brain
 func (r *Repeater) OnAbort(brain bcore.IBrain) {
 	r.Decorator.OnAbort(brain)
 	if r.Decorated(brain).IsActive(brain) {
+		r.Decorated(brain).SetUpstream(brain, r)
 		r.Decorated(brain).Abort(brain)
 	} else {
 		r.Decorated(brain).Finish(brain, false)
@@ -59,11 +64,12 @@ func (r *Repeater) OnAbort(brain bcore.IBrain) {
 }
 
 // OnChildFinished
-//  @override bcore.Decorator .OnChildFinished
-//  @receiver s
-//  @param brain
-//  @param child
-//  @param succeeded
+//
+//	@override bcore.Decorator .OnChildFinished
+//	@receiver s
+//	@param brain
+//	@param child
+//	@param succeeded
 func (r *Repeater) OnChildFinished(brain bcore.IBrain, child bcore.INode, succeeded bool) {
 	r.Decorator.OnChildFinished(brain, child, succeeded)
 	if !succeeded {

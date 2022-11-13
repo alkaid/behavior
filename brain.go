@@ -1,6 +1,7 @@
 package behavior
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"time"
@@ -30,6 +31,7 @@ type Brain struct {
 	delegatesMeta map[string]*bcore.DelegateMeta
 	finishChan    chan *bcore.FinishEvent // 供上层业务方使用的完成通知
 	root          bcore.IRoot
+	ctx           context.Context
 }
 
 func (b *Brain) SetFinishChan(finishChan chan *bcore.FinishEvent) {
@@ -51,6 +53,12 @@ func (b *Brain) Running() bool {
 func (b *Brain) SetRunningTree(root bcore.IRoot) {
 	b.root = root
 }
+func (b *Brain) Context() context.Context {
+	return b.ctx
+}
+func (b *Brain) SetContext(ctx context.Context) {
+	b.ctx = ctx
+}
 
 // NewBrain bcore.IBrain 实例
 //
@@ -64,6 +72,7 @@ func NewBrain(blackboard bcore.IBlackboard, delegates map[string]any, finishChan
 	}
 	b.SetDelegates(delegates)
 	b.finishChan = finishChan
+	b.ctx = context.Background()
 	return b
 }
 
@@ -139,6 +148,7 @@ func (b *Brain) Abort(abortChan chan *bcore.FinishEvent) {
 			}
 			return
 		}
+		b.RunningTree().SetUpstream(b, nil)
 		b.RunningTree().Abort(b)
 		if abortChan != nil {
 			abortChan <- event
@@ -149,6 +159,7 @@ func (b *Brain) Run(tag string, force bool) {
 	b.Go(func() {
 		if b.Running() && b.RunningTree().IsActive(b) {
 			if force {
+				b.RunningTree().SetUpstream(b, nil)
 				b.RunningTree().Abort(b)
 			} else {
 				return

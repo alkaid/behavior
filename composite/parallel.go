@@ -88,6 +88,7 @@ func (p *Parallel) OnAbort(brain bcore.IBrain) {
 	// 向下传播给当前活跃子节点
 	for _, child := range p.Children() {
 		if child.IsActive(brain) {
+			child.SetUpstream(brain, p)
 			child.Abort(brain)
 		}
 	}
@@ -147,6 +148,7 @@ func (p *Parallel) OnChildFinished(brain bcore.IBrain, child bcore.INode, succee
 		if memory.ChildrenAborted {
 			for _, node := range p.Children() {
 				if node.IsActive(brain) {
+					node.SetUpstream(brain, p)
 					node.Abort(brain)
 				}
 			}

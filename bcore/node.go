@@ -1,6 +1,7 @@
 package bcore
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -66,6 +67,7 @@ type INode interface {
 	//  注意由于行为数是单例,这里只能设置当前所在子树的root.
 	//  @param root
 	SetRoot(brain IBrain, root IRoot)
+	SetUpstream(brain IBrain, upstream INode)
 	// Start 开始执行 非线程安全,上层须自行封装线程安全的方法
 	//  @param brain
 	Start(brain IBrain)
@@ -100,7 +102,7 @@ type INode interface {
 	//  @param brain
 	//  @param parent
 	DynamicMount(brain IBrain, parent IContainer)
-	Log(brain IBrain) *zap.Logger
+	Log(brain IBrain, ops ...LogOption) *zap.Logger
 }
 
 // INodeWorker Node 中会回调的方法,应该委托给继承树中的叶子子类实现
@@ -350,6 +352,15 @@ func (n *Node) SetRoot(brain IBrain, root IRoot) {
 	n.root = root
 }
 
+type BrainContextKey string
+
+var upstreamKey BrainContextKey = "_upstream"
+
+func (n *Node) SetUpstream(brain IBrain, upstream INode) {
+	ibrain := brain.(IBrainInternal)
+	ibrain.SetContext(context.WithValue(ibrain.Context(), upstreamKey, upstream))
+}
+
 // Start
 //
 //	@implement INode.Start
@@ -492,7 +503,7 @@ func (n *Node) OnStart(brain IBrain) {
 //	@receiver n
 //	@param brain
 func (n *Node) OnAbort(brain IBrain) {
-	n.Log(brain).Debug(" OnAbort")
+	n.Log(brain, LogWithUpstream).Debug(" OnAbort")
 }
 
 // OnCompositeAncestorFinished
@@ -531,11 +542,30 @@ func (n *Node) OnString(brain IBrain) string {
 	return n.name + "(" + n.title + ")"
 }
 
-func (n *Node) Log(brain IBrain) *zap.Logger {
-	if brain != nil {
-		return logger.Log.With(zap.Int("id", brain.Blackboard().(IBlackboardInternal).ThreadID()), zap.String("name", n.name), zap.String("title", n.title), zap.Int("state", int(n.State(brain))))
+type LogOption = func(brain IBrain, logg *zap.Logger) *zap.Logger
+
+func LogWithUpstream(brain IBrain, logg *zap.Logger) *zap.Logger {
+	if brain == nil {
+		return logg
 	}
-	return logger.Log.With(zap.String("name", n.name), zap.String("title", n.title))
+	upstreamAny := brain.(IBrainInternal).Context().Value(upstreamKey)
+	if upstreamAny != nil {
+		upstream := upstreamAny.(INode)
+		return logg.With(zap.Namespace("upstream"), zap.String("name", upstream.Name()), zap.String("title", upstream.Title()), zap.Int("state", int(upstream.State(brain))))
+	}
+	return logg
+}
+
+func (n *Node) Log(brain IBrain, ops ...LogOption) *zap.Logger {
+	logg := logger.Log.With(zap.String("name", n.name), zap.String("title", n.title))
+	if brain == nil {
+		return logg
+	}
+	logg = logger.Log.With(zap.Int("id", brain.Blackboard().(IBlackboardInternal).ThreadID()), zap.String("name", n.name), zap.String("title", n.title), zap.Int("state", int(n.State(brain))))
+	for _, op := range ops {
+		logg = op(brain, logg)
+	}
+	return logg
 }
 
 func Print(node INode, brain IBrain) {

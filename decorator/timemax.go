@@ -75,6 +75,7 @@ func (m *TimeMax) OnAbort(brain bcore.IBrain) {
 	m.Decorator.OnAbort(brain)
 	m.stopTimer(brain)
 	if m.Decorated(brain).IsActive(brain) {
+		m.Decorated(brain).SetUpstream(brain, m)
 		m.Decorated(brain).Abort(brain)
 	} else {
 		m.Finish(brain, false)
@@ -101,6 +102,7 @@ func (m *TimeMax) OnChildFinished(brain bcore.IBrain, child bcore.INode, succeed
 func (b *TimeMax) getTaskFun(brain bcore.IBrain) func() {
 	return func() {
 		if !b.TimeMaxProperties().GetWaitForChildButFail() {
+			b.Decorated(brain).SetUpstream(brain, b)
 			b.Decorated(brain).Abort(brain)
 		} else {
 			b.Memory(brain).LimitReached = true

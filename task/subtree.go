@@ -90,6 +90,7 @@ func (t *Subtree) OnAbort(brain bcore.IBrain) {
 	// 向下传播
 	decorated := t.Decorated(brain)
 	if decorated != nil {
+		decorated.SetUpstream(brain, t)
 		decorated.Abort(brain)
 		return
 	}

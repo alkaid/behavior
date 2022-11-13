@@ -89,9 +89,11 @@ func (t *DynamicSubtree) DynamicDecorate(brain bcore.IBrain, decorated bcore.IRo
 	case bcore.DynamicBehaviorModeContinue:
 		return
 	case bcore.DynamicBehaviorModeAbort:
+		t.SetUpstream(brain, t)
 		t.Abort(brain)
 	case bcore.DynamicBehaviorModeRestart:
 		t.Memory(brain).Restarting = true
+		t.SetUpstream(brain, t)
 		t.Abort(brain)
 	}
 }
