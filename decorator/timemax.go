@@ -98,6 +98,9 @@ func (m *TimeMax) OnChildFinished(brain bcore.IBrain, child bcore.INode, succeed
 
 func (b *TimeMax) getTaskFun(brain bcore.IBrain) func() {
 	return func() {
+		if !b.IsActive(brain) {
+			return
+		}
 		if !b.TimeMaxProperties().GetWaitForChildButFail() {
 			b.Decorated(brain).SetUpstream(brain, b)
 			b.Decorated(brain).Abort(brain)

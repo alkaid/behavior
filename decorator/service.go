@@ -60,6 +60,9 @@ func (s *Service) OnStart(brain bcore.IBrain) {
 	s.stopTimer(brain)
 	// 默认投递到黑板保存的线程ID
 	s.Memory(brain).CronTask = brain.Cron(interval, randomDeviation, func() {
+		if !s.IsActive(brain) {
+			return
+		}
 		currTime := time.Now()
 		delta := currTime.Sub(lastTime)
 		s.Update(brain, bcore.EventTypeOnStart, delta)

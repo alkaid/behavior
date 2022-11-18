@@ -80,6 +80,9 @@ func (r *Repeater) OnChildFinished(brain bcore.IBrain, child bcore.INode, succee
 	}
 	// 不能直接 Finish(),会堆栈溢出且阻塞其他分支,应该重新异步派发
 	thread.GoByID(brain.Blackboard().(bcore.IBlackboardInternal).ThreadID(), func() {
+		if !r.IsActive(brain) {
+			return
+		}
 		r.Decorated(brain).Start(brain)
 	})
 }

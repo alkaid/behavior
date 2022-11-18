@@ -276,7 +276,9 @@ func (r *Root) startTimer(brain IBrain) {
 	r.Memory(brain).CronTask = brain.After(r.properties.(iRootProperties).GetLoopInterval(),
 		r.properties.(iRootProperties).GetRandomDeviation(),
 		func() {
-			r.Decorated(brain).Start(brain)
+			if r.IsActive(brain) {
+				r.Decorated(brain).Start(brain)
+			}
 		})
 }
 func (r *Root) stopTimer(brain IBrain) {

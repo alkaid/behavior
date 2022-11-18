@@ -58,6 +58,9 @@ func (a *Action) OnStart(brain bcore.IBrain) {
 	lastTime := time.Now()
 	// 默认投递到黑板保存的线程ID
 	a.Memory(brain).CronTask = brain.Cron(interval, 0, func() {
+		if !a.IsActive(brain) {
+			return
+		}
 		currTime := time.Now()
 		delta := currTime.Sub(lastTime)
 		lastTime = currTime

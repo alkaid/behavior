@@ -105,6 +105,9 @@ func (m *TimeMin) OnChildFinished(brain bcore.IBrain, child bcore.INode, succeed
 
 func (b *TimeMin) getTaskFun(brain bcore.IBrain) func() {
 	return func() {
+		if !b.IsActive(brain) {
+			return
+		}
 		b.Memory(brain).LimitReached = true
 		if b.Memory(brain).DecoratedDone {
 			b.Finish(brain, b.Memory(brain).DecoratedSuccess)

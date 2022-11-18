@@ -52,6 +52,9 @@ func (c *Condition) StartObserving(brain bcore.IBrain) {
 	lastTime := time.Now()
 	// 默认投递到黑板保存的线程ID
 	c.Memory(brain).CronTask = brain.Cron(interval, randomDeviation, func() {
+		if !c.IsActive(brain) {
+			return
+		}
 		currTime := time.Now()
 		delta := currTime.Sub(lastTime)
 		c.Evaluate(brain, delta)

@@ -69,7 +69,9 @@ func (w *Wait) OnStart(brain bcore.IBrain) {
 		return
 	}
 	w.Memory(brain).CronTask = brain.After(w.WaitProperties().GetWaitTime(), w.WaitProperties().GetRandomDeviation(), func() {
-		w.Finish(brain, true)
+		if w.IsActive(brain) {
+			w.Finish(brain, true)
+		}
 	})
 }
 

@@ -63,6 +63,9 @@ func (w *WaitBB) OnStart(brain bcore.IBrain) {
 		w.Finish(brain, true)
 	}
 	w.Memory(brain).CronTask = brain.After(delay, w.WaitBBProperties().GetRandomDeviation(), func() {
+		if !w.IsActive(brain) {
+			return
+		}
 		w.Finish(brain, true)
 	})
 }
