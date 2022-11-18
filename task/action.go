@@ -4,8 +4,6 @@ import (
 	"time"
 
 	"github.com/alkaid/behavior/bcore"
-	"github.com/alkaid/behavior/timer"
-	"github.com/alkaid/timingwheel"
 )
 
 // type IActionProperties interface {
@@ -59,7 +57,7 @@ func (a *Action) OnStart(brain bcore.IBrain) {
 	a.stopTimer(brain)
 	lastTime := time.Now()
 	// 默认投递到黑板保存的线程ID
-	a.Memory(brain).CronTask = timer.Cron(interval, 0, func() {
+	a.Memory(brain).CronTask = brain.Cron(interval, 0, func() {
 		currTime := time.Now()
 		delta := currTime.Sub(lastTime)
 		lastTime = currTime
@@ -69,7 +67,7 @@ func (a *Action) OnStart(brain bcore.IBrain) {
 			a.Finish(brain, result == bcore.ResultSucceeded)
 			return
 		}
-	}, timingwheel.WithGoID(brain.Blackboard().(bcore.IBlackboardInternal).ThreadID()))
+	})
 }
 
 // OnAbort

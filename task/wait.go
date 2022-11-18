@@ -5,9 +5,6 @@ import (
 
 	"github.com/alkaid/behavior/util"
 
-	"github.com/alkaid/behavior/timer"
-	"github.com/alkaid/timingwheel"
-
 	"github.com/alkaid/behavior/bcore"
 )
 
@@ -71,9 +68,9 @@ func (w *Wait) OnStart(brain bcore.IBrain) {
 	if w.WaitProperties().GetForever() {
 		return
 	}
-	w.Memory(brain).CronTask = timer.After(w.WaitProperties().GetWaitTime(), w.WaitProperties().GetRandomDeviation(), func() {
+	w.Memory(brain).CronTask = brain.After(w.WaitProperties().GetWaitTime(), w.WaitProperties().GetRandomDeviation(), func() {
 		w.Finish(brain, true)
-	}, timingwheel.WithGoID(brain.Blackboard().(bcore.IBlackboardInternal).ThreadID()))
+	})
 }
 
 // OnAbort

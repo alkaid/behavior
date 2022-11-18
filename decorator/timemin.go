@@ -3,11 +3,8 @@ package decorator
 import (
 	"time"
 
-	"github.com/alkaid/behavior/timer"
-	"github.com/alkaid/behavior/util"
-	"github.com/alkaid/timingwheel"
-
 	"github.com/alkaid/behavior/bcore"
+	"github.com/alkaid/behavior/util"
 )
 
 type ITimeMinProperties interface {
@@ -120,10 +117,9 @@ func (b *TimeMin) getTaskFun(brain bcore.IBrain) func() {
 	}
 }
 func (b *TimeMin) startTimer(brain bcore.IBrain) {
-	b.Memory(brain).CronTask = timer.After(b.TimeMinProperties().GetLimit(),
+	b.Memory(brain).CronTask = brain.After(b.TimeMinProperties().GetLimit(),
 		b.TimeMinProperties().GetRandomDeviation(),
-		b.getTaskFun(brain),
-		timingwheel.WithGoID(brain.Blackboard().(bcore.IBlackboardInternal).ThreadID()))
+		b.getTaskFun(brain))
 }
 func (b *TimeMin) stopTimer(brain bcore.IBrain) {
 	if b.Memory(brain).CronTask != nil {

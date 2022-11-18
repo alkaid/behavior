@@ -179,6 +179,9 @@ func (b *Blackboard) RemoveObserver(key string, observer Observer) {
 func (b *Blackboard) addOrRmObserver(add bool, key string, observer Observer) {
 	// 无论调用方是否在AI线程里,都兜底派发到AI线程,避免和监听函数并行
 	thread.GoByID(b.threadID, func() {
+		if !b.enable {
+			return
+		}
 		observers, ok := b.observers[key]
 		contains := false
 		if !ok {

@@ -11,7 +11,7 @@ type IRepeaterProperties interface {
 
 // RepeaterProperties 黑板条件节点属性
 type RepeaterProperties struct {
-	Times int `json:"times"` // 循环次数 负值将永远循环
+	Times int `json:"times"` // 循环次数 0或负值将永远循环
 }
 
 func (r *RepeaterProperties) GetTimes() int {
@@ -41,11 +41,8 @@ func (r *Repeater) PropertiesClassProvider() any {
 //	@param brain
 func (r *Repeater) OnStart(brain bcore.IBrain) {
 	r.Decorator.OnStart(brain)
-	if r.Properties().(IRepeaterProperties).GetTimes() == 0 {
-		r.Finish(brain, true)
-		return
-	}
 	r.Memory(brain).CurrIndex = 0
+	r.Decorated(brain).Start(brain)
 }
 
 // OnAbort
@@ -77,7 +74,7 @@ func (r *Repeater) OnChildFinished(brain bcore.IBrain, child bcore.INode, succee
 		return
 	}
 	r.Memory(brain).CurrIndex++
-	if r.IsAborting(brain) || r.Memory(brain).CurrIndex >= r.Properties().(IRepeaterProperties).GetTimes() {
+	if r.IsAborting(brain) || (r.Properties().(IRepeaterProperties).GetTimes() > 0 && r.Memory(brain).CurrIndex >= r.Properties().(IRepeaterProperties).GetTimes()) {
 		r.Finish(brain, true)
 		return
 	}

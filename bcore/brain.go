@@ -4,6 +4,8 @@ import (
 	"context"
 	"reflect"
 	"time"
+
+	"github.com/alkaid/timingwheel"
 )
 
 type DelegateMeta struct {
@@ -61,6 +63,8 @@ type IBrain interface {
 	// @param subtreeTag 子树的tag
 	// @return error
 	DynamicDecorate(containerTag string, subtreeTag string) error
+	Cron(interval time.Duration, randomDeviation time.Duration, task func()) *timingwheel.Timer
+	After(interval time.Duration, randomDeviation time.Duration, task func()) *timingwheel.Timer
 }
 
 // IBrainInternal 框架内部使用的 Brain

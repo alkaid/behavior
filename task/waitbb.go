@@ -7,9 +7,6 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/alkaid/behavior/timer"
-	"github.com/alkaid/timingwheel"
-
 	"github.com/alkaid/behavior/bcore"
 )
 
@@ -65,9 +62,9 @@ func (w *WaitBB) OnStart(brain bcore.IBrain) {
 		// 取值失败则默认为不等待
 		w.Finish(brain, true)
 	}
-	w.Memory(brain).CronTask = timer.After(delay, w.WaitBBProperties().GetRandomDeviation(), func() {
+	w.Memory(brain).CronTask = brain.After(delay, w.WaitBBProperties().GetRandomDeviation(), func() {
 		w.Finish(brain, true)
-	}, timingwheel.WithGoID(brain.Blackboard().(bcore.IBlackboardInternal).ThreadID()))
+	})
 }
 
 // OnAbort

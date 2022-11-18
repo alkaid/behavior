@@ -5,10 +5,6 @@ import (
 
 	"github.com/alkaid/behavior/util"
 
-	"github.com/alkaid/timingwheel"
-
-	"github.com/alkaid/behavior/timer"
-
 	"github.com/alkaid/behavior/bcore"
 )
 
@@ -63,12 +59,12 @@ func (s *Service) OnStart(brain bcore.IBrain) {
 	lastTime := time.Now()
 	s.stopTimer(brain)
 	// 默认投递到黑板保存的线程ID
-	s.Memory(brain).CronTask = timer.Cron(interval, randomDeviation, func() {
+	s.Memory(brain).CronTask = brain.Cron(interval, randomDeviation, func() {
 		currTime := time.Now()
 		delta := currTime.Sub(lastTime)
 		s.Update(brain, bcore.EventTypeOnStart, delta)
 		lastTime = currTime
-	}, timingwheel.WithGoID(brain.Blackboard().(bcore.IBlackboardInternal).ThreadID()))
+	})
 	s.Update(brain, bcore.EventTypeOnStart, 0)
 	s.Decorated(brain).Start(brain)
 }

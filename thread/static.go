@@ -16,6 +16,10 @@ const MainThreadID = math.MaxInt // 主线程ID
 
 var pool *ants.Pool // 线程池,主要用于分离session线程
 
+func PoolInstance() *ants.Pool {
+	return pool
+}
+
 // InitPool 用默认参数初始化全局线程池
 func InitPool(p *ants.Pool) error {
 	if pool != nil {
@@ -41,9 +45,10 @@ func ReleaseTableGoPool() {
 }
 
 // GoByID 根据指定的goroutineID派发线程
-//  @receiver h
-//  @param goID 若>0,派发到指定线程,否则随机派发
-//  @param task
+//
+//	@receiver h
+//	@param goID 若>0,派发到指定线程,否则随机派发
+//	@param task
 func GoByID[T int | int32 | int64](goID T, task func()) {
 	if goID > 0 {
 		err := pool.SubmitWithID(int(goID), task)
@@ -67,13 +72,15 @@ func WaitByID[T int | int32 | int64](goID T, task func()) {
 }
 
 // GoMain 派发到主线程
-//  @param task
+//
+//	@param task
 func GoMain(task func()) {
 	GoByID(MainThreadID, task)
 }
 
 // WaitMain 派发到主线程并等待执行完成
-//  @param task
+//
+//	@param task
 func WaitMain(task func()) {
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
@@ -85,7 +92,8 @@ func WaitMain(task func()) {
 }
 
 // Go 从默认线程池获取一个goroutine并派发任务
-//  @param task
+//
+//	@param task
 func Go(task func()) {
 	err := ants.Submit(task)
 	if err != nil {

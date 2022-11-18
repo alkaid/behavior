@@ -5,9 +5,6 @@ import (
 
 	"github.com/alkaid/behavior/util"
 
-	"github.com/alkaid/behavior/timer"
-	"github.com/alkaid/timingwheel"
-
 	"github.com/alkaid/behavior/bcore"
 )
 
@@ -114,10 +111,9 @@ func (b *TimeMax) getTaskFun(brain bcore.IBrain) func() {
 	}
 }
 func (b *TimeMax) startTimer(brain bcore.IBrain) {
-	b.Memory(brain).CronTask = timer.After(b.TimeMaxProperties().GetLimit(),
+	b.Memory(brain).CronTask = brain.After(b.TimeMaxProperties().GetLimit(),
 		b.TimeMaxProperties().GetRandomDeviation(),
-		b.getTaskFun(brain),
-		timingwheel.WithGoID(brain.Blackboard().(bcore.IBlackboardInternal).ThreadID()))
+		b.getTaskFun(brain))
 }
 func (b *TimeMax) stopTimer(brain bcore.IBrain) {
 	if b.Memory(brain).CronTask != nil {

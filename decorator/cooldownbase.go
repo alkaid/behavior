@@ -6,8 +6,6 @@ import (
 	"github.com/alkaid/behavior/util"
 
 	"github.com/alkaid/behavior/bcore"
-	"github.com/alkaid/behavior/timer"
-	"github.com/alkaid/timingwheel"
 )
 
 type ICooldownBaseProperties interface {
@@ -144,10 +142,9 @@ func (b *CooldownBase) getTaskFun(brain bcore.IBrain) func() {
 	}
 }
 func (b *CooldownBase) startTimer(brain bcore.IBrain) {
-	b.Memory(brain).CronTask = timer.After(b.CooldownTime(brain),
+	b.Memory(brain).CronTask = brain.After(b.CooldownTime(brain),
 		b.CooldownProperties().GetRandomDeviation(),
-		b.getTaskFun(brain),
-		timingwheel.WithGoID(brain.Blackboard().(bcore.IBlackboardInternal).ThreadID()))
+		b.getTaskFun(brain))
 }
 func (b *CooldownBase) stopTimer(brain bcore.IBrain) {
 	if b.Memory(brain).CronTask != nil {

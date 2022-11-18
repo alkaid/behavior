@@ -3,9 +3,6 @@ package bcore
 import (
 	"time"
 
-	"github.com/alkaid/behavior/timer"
-	"github.com/alkaid/timingwheel"
-
 	"github.com/alkaid/behavior/logger"
 
 	"github.com/alkaid/behavior/util"
@@ -276,12 +273,11 @@ func (r *Root) Finish(brain IBrain, succeeded bool) {
 }
 
 func (r *Root) startTimer(brain IBrain) {
-	r.Memory(brain).CronTask = timer.After(r.properties.(iRootProperties).GetLoopInterval(),
+	r.Memory(brain).CronTask = brain.After(r.properties.(iRootProperties).GetLoopInterval(),
 		r.properties.(iRootProperties).GetRandomDeviation(),
 		func() {
 			r.Decorated(brain).Start(brain)
-		},
-		timingwheel.WithGoID(brain.Blackboard().(IBlackboardInternal).ThreadID()))
+		})
 }
 func (r *Root) stopTimer(brain IBrain) {
 	if r.Memory(brain).CronTask != nil {

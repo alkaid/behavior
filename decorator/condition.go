@@ -4,8 +4,6 @@ import (
 	"time"
 
 	"github.com/alkaid/behavior/bcore"
-	"github.com/alkaid/behavior/timer"
-	"github.com/alkaid/timingwheel"
 )
 
 type IConditionProperties interface {
@@ -53,12 +51,12 @@ func (c *Condition) StartObserving(brain bcore.IBrain) {
 	c.StopObserving(brain)
 	lastTime := time.Now()
 	// 默认投递到黑板保存的线程ID
-	c.Memory(brain).CronTask = timer.Cron(interval, randomDeviation, func() {
+	c.Memory(brain).CronTask = brain.Cron(interval, randomDeviation, func() {
 		currTime := time.Now()
 		delta := currTime.Sub(lastTime)
 		c.Evaluate(brain, delta)
 		lastTime = currTime
-	}, timingwheel.WithGoID(brain.Blackboard().(bcore.IBlackboardInternal).ThreadID()))
+	})
 }
 
 // StopObserving

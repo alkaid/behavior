@@ -6,6 +6,9 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/alkaid/behavior/timer"
+	"github.com/alkaid/timingwheel"
+
 	"github.com/pkg/errors"
 
 	"github.com/alkaid/behavior/thread"
@@ -27,7 +30,7 @@ var _ bcore.IBrain = (*Brain)(nil)
 type ExecutorFun = func(eventType bcore.EventType, delta time.Duration) bcore.Result
 
 type Brain struct {
-	blackboard    bcore.IBlackboard
+	blackboard    bcore.IBlackboardInternal
 	delegatesMeta map[string]*bcore.DelegateMeta
 	finishChan    chan *bcore.FinishEvent // 供上层业务方使用的完成通知
 	root          bcore.IRoot
@@ -67,7 +70,7 @@ func (b *Brain) SetContext(ctx context.Context) {
 //	@return bcore.IBrain
 func NewBrain(blackboard bcore.IBlackboard, delegates map[string]any, finishChan chan *bcore.FinishEvent) bcore.IBrain {
 	b := &Brain{
-		blackboard:    blackboard,
+		blackboard:    blackboard.(bcore.IBlackboardInternal),
 		delegatesMeta: map[string]*bcore.DelegateMeta{},
 	}
 	b.SetDelegates(delegates)
@@ -125,7 +128,7 @@ func (b *Brain) GetDelegate(name string) (delegate any, ok bool) {
 }
 
 func (b *Brain) Go(task func()) {
-	thread.GoByID(b.blackboard.(bcore.IBlackboardInternal).ThreadID(), task)
+	thread.GoByID(b.blackboard.ThreadID(), task)
 }
 
 // Abort @implement bcore.IBrain .Abort
@@ -271,4 +274,24 @@ func (b *Brain) OnNodeUpdate(target string, method string, brain bcore.IBrain, e
 	// 出参数量超限
 	log.Error("delegator method return value's number illegal")
 	return bcore.ResultFailed
+}
+
+// Cron wrap timingwheel.TimingWheel .Cron
+//
+//	@param interval 间隔
+//	@param randomDeviation 随机方差范围,interval=interval+randomDeviation*[-0.5,0.5)
+//	@param task
+//	@param opts
+func (b *Brain) Cron(interval time.Duration, randomDeviation time.Duration, task func()) *timingwheel.Timer {
+	return timer.Cron(interval, randomDeviation, task, timingwheel.WithGoID(b.blackboard.ThreadID()), timingwheel.WithPool(thread.PoolInstance()))
+}
+
+// After wrap timingwheel.TimingWheel .AfterFunc
+//
+//	@param interval 间隔
+//	@param randomDeviation 随机方差范围 interval = interval + randomDeviation*[-0.5,0.5)
+//	@param task
+//	@param opts
+func (b *Brain) After(interval time.Duration, randomDeviation time.Duration, task func()) *timingwheel.Timer {
+	return timer.After(interval, randomDeviation, task, timingwheel.WithGoID(b.blackboard.ThreadID()), timingwheel.WithPool(thread.PoolInstance()))
 }
