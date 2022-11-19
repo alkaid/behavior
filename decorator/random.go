@@ -62,8 +62,6 @@ func (r *Random) OnStart(brain bcore.IBrain) {
 //	@param brain
 func (r *Random) OnAbort(brain bcore.IBrain) {
 	r.Decorator.OnAbort(brain)
-	r.Decorated(brain).SetUpstream(brain, r)
-	r.Decorated(brain).Abort(brain)
 }
 
 // OnChildFinished

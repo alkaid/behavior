@@ -78,8 +78,8 @@ func (s *Service) OnStart(brain bcore.IBrain) {
 //	@receiver n
 //	@param brain
 func (s *Service) OnAbort(brain bcore.IBrain) {
-	s.Decorator.OnAbort(brain)
 	s.stopTimer(brain)
+	s.Decorator.OnAbort(brain)
 }
 
 // OnChildFinished

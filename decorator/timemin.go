@@ -70,15 +70,9 @@ func (m *TimeMin) OnStart(brain bcore.IBrain) {
 //	@receiver n
 //	@param brain
 func (m *TimeMin) OnAbort(brain bcore.IBrain) {
-	m.Decorator.OnAbort(brain)
 	m.stopTimer(brain)
-	if m.Decorated(brain).IsActive(brain) {
-		m.Memory(brain).LimitReached = true
-		m.Decorated(brain).SetUpstream(brain, m)
-		m.Decorated(brain).Abort(brain)
-	} else {
-		m.Finish(brain, false)
-	}
+	m.Memory(brain).LimitReached = true
+	m.Decorator.OnAbort(brain)
 }
 
 // OnChildFinished

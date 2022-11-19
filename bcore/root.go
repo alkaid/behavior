@@ -209,8 +209,6 @@ func (r *Root) SafeAbort(brain IBrain, abortChan chan *FinishEvent) {
 //	@param brain
 func (r *Root) OnAbort(brain IBrain) {
 	r.Decorator.OnAbort(brain)
-	r.Decorated(brain).SetUpstream(brain, r)
-	r.Decorated(brain).Abort(brain)
 }
 
 // OnChildFinished

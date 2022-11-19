@@ -106,8 +106,6 @@ func (o *ObservingDecorator) OnStart(brain IBrain) {
 //	@param brain
 func (o *ObservingDecorator) OnAbort(brain IBrain) {
 	o.Decorator.OnAbort(brain)
-	o.Decorated(brain).SetUpstream(brain, o)
-	o.Decorated(brain).Abort(brain)
 }
 
 // OnChildFinished

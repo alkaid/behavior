@@ -28,8 +28,6 @@ func (f *SimpleDecorator) OnStart(brain bcore.IBrain) {
 //	@param brain
 func (f *SimpleDecorator) OnAbort(brain bcore.IBrain) {
 	f.Decorator.OnAbort(brain)
-	f.Decorated(brain).SetUpstream(brain, f)
-	f.Decorated(brain).Abort(brain)
 }
 
 // OnChildFinished

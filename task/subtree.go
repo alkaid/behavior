@@ -86,12 +86,17 @@ func (t *Subtree) OnStart(brain bcore.IBrain) {
 //	@receiver n
 //	@param brain
 func (t *Subtree) OnAbort(brain bcore.IBrain) {
-	t.Decorator.OnAbort(brain)
+	t.Container.OnAbort(brain)
 	// 向下传播
 	decorated := t.Decorated(brain)
 	if decorated != nil {
-		decorated.SetUpstream(brain, t)
-		decorated.Abort(brain)
+		if decorated.IsActive(brain) {
+			decorated.SetUpstream(brain, t)
+			decorated.Abort(brain)
+		} else if decorated.IsInactive(brain) {
+			// 子节点是关闭状态,可能是父节点异步start子节点的情况，直接结束父节点
+			t.Finish(brain, false)
+		}
 		return
 	}
 	// 无子节点时默认返回失败

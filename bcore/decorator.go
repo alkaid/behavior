@@ -126,4 +126,22 @@ func (d *Decorator) Finish(brain IBrain, succeeded bool) {
 	d.Container.Finish(brain, succeeded)
 }
 
+// OnAbort 子类若有不同实现不该直接继承
+//
+//	@override Node.OnAbort
+//	@receiver n
+//	@param brain
+func (d *Decorator) OnAbort(brain IBrain) {
+	d.Container.OnAbort(brain)
+	if d.Decorated(brain).IsActive(brain) {
+		d.Decorated(brain).SetUpstream(brain, d)
+		d.Decorated(brain).Abort(brain)
+	} else if d.Decorated(brain).IsInactive(brain) {
+		// 装饰器可能异步启动子节点,所以在装饰器被打断时有可能子节点还没启动,需要添加判断.
+		// 子节点是关闭状态,可能是父节点异步start子节点的情况，直接结束父节点
+		d.NodeWorkerAsNode().Finish(brain, false)
+	}
+	// aborting do nothing
+}
+
 // 这里本来应该override OnChildFinish()并调用 c.Finish() 但是每种派生子类的逻辑都不太一样,很多在c.Finish()之前还有一些其他的收尾工作，故由子类自行调用Finish

@@ -52,12 +52,6 @@ func (r *Repeater) OnStart(brain bcore.IBrain) {
 //	@param brain
 func (r *Repeater) OnAbort(brain bcore.IBrain) {
 	r.Decorator.OnAbort(brain)
-	if r.Decorated(brain).IsActive(brain) {
-		r.Decorated(brain).SetUpstream(brain, r)
-		r.Decorated(brain).Abort(brain)
-	} else {
-		r.Decorated(brain).Finish(brain, false)
-	}
 }
 
 // OnChildFinished

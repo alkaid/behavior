@@ -102,15 +102,9 @@ func (b *CooldownBase) OnStart(brain bcore.IBrain) {
 //	@receiver n
 //	@param brain
 func (b *CooldownBase) OnAbort(brain bcore.IBrain) {
-	b.Decorator.OnAbort(brain)
 	b.Memory(brain).Cooling = false
 	b.stopTimer(brain)
-	if b.Decorated(brain).IsActive(brain) {
-		b.Decorated(brain).SetUpstream(brain, b)
-		b.Decorated(brain).Abort(brain)
-	} else {
-		b.Finish(brain, false)
-	}
+	b.Decorator.OnAbort(brain)
 }
 
 // OnChildFinished
