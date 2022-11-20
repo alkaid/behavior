@@ -39,7 +39,7 @@ type Observer func(op OpType, key string, oldValue any, newValue any)
 //	黑板的kv读写可以在任意线程
 //	黑板为树形结构,实例化时可指定父黑板,将继承父黑板的KV.父黑板,一般来说是AI集群的共享黑板。想实现AI间通信时这将很有用.
 type Blackboard struct {
-	memoryMutex sync.Mutex
+	memoryMutex sync.RWMutex
 	threadID    int                    // 监听函数执行的线程ID
 	treesMemory map[string]Memory      // 索引为行为树ID(rootID),元素为对应行为树的数据<行为树域>.仅允许框架内部CRUD
 	nodesData   map[string]*NodeMemory // 索引为节点ID,元素为对应节点的数据<节点域>.仅允许节点内部CRUD
@@ -237,12 +237,14 @@ func (b *Blackboard) notify(op OpType, key string, oldVal any, newVal any) {
 //	@return any
 //	@return bool
 func (b *Blackboard) Get(key string) (any, bool) {
+	b.memoryMutex.RLock()
+	defer b.memoryMutex.RUnlock()
 	val, ok := b.userMemory[key]
 	if ok || b.parent == nil {
 		return val, ok
 	}
 	// 找不到时回溯父黑板
-	val, ok = b.parent.userMemory[key]
+	val, ok = b.parent.Get(key)
 	return val, ok
 }
 
