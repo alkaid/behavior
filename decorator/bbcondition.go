@@ -2,6 +2,7 @@ package decorator
 
 import (
 	"fmt"
+	"github.com/samber/lo"
 
 	"github.com/alkaid/behavior/bcore"
 
@@ -99,21 +100,24 @@ func (c *BBCondition) ConditionMet(brain bcore.IBrain, args ...any) bool {
 	if propValue == nil {
 		propValue = ""
 	}
+	isEqualOp := c.BBConditionProperties().GetOperator() == bcore.OperatorIsEqual
 	switch c.BBConditionProperties().GetOperator() {
-	case bcore.OperatorIsSet, bcore.OperatorIsNotSet:
+	case bcore.OperatorIsSet:
 		return ok
+	case bcore.OperatorIsNotSet:
+		return !ok
 	case bcore.OperatorIsEqual, bcore.OperatorIsNotEqual:
 		if !ok {
 			switch realPropV := propValue.(type) {
 			case string:
-				return realPropV == ""
+				return lo.If(isEqualOp, realPropV == "").Else(realPropV != "")
 			case bool:
-				return realPropV == false
+				return lo.If(isEqualOp, realPropV == false).Else(realPropV != false)
 			}
 		} else {
 			switch realV := v.(type) {
 			case bool, string:
-				return realV == propValue
+				return lo.If(isEqualOp, realV == propValue).Else(realV != propValue)
 			}
 		}
 	}
