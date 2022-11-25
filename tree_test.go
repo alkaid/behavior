@@ -14,7 +14,7 @@ import (
 )
 
 func help() {
-	InitSystem(WithLogDevelopment(true), WithLogLevel(zapcore.DebugLevel))
+	InitSystem(WithLogDevelopment(true), WithLogLevel(zapcore.InfoLevel))
 }
 
 func TestTreeRegistry_LoadFromPaths(t *testing.T) {
@@ -61,6 +61,37 @@ func TestRunTree_LoadFromStr(t *testing.T) {
 			}
 			brain := NewBrain(bcore.NewBlackboard(1, nil), nil, fch)
 			brain.Run("testwait", false)
+		})
+	}
+	<-fch
+}
+
+func TestWaitNode(t *testing.T) {
+	help()
+	content := `
+{"root":"5bIRbEtORNKoeoH0hlx+Dk277C9","nodes":{"becf7thI19O2K973s5Yb7xnAF589":{"id":"becf7thI19O2K973s5Yb7xnAF589","name":"Sequence","title":"Sequence","category":"composite","children":["05f6djYn2pOQ5r0h9lEccYA84D1C"],"properties":{},"delegator":{"target":"","method":"","script":""}},"05f6djYn2pOQ5r0h9lEccYA84D1C":{"id":"05f6djYn2pOQ5r0h9lEccYA84D1C","name":"Wait","title":"Wait","category":"task","children":[],"properties":{"waitTime":"3s","randomDeviation":"6s","forever":false},"delegator":{"target":"","method":"","script":""}},"5bIRbEtORNKoeoH0hlx+Dk277C9":{"id":"5bIRbEtORNKoeoH0hlx+Dk277C9","name":"Root","category":"decorator","title":"Root","properties":{"once":false,"interval":""},"delegator":{},"children":["becf7thI19O2K973s5Yb7xnAF589"]}},"tag":"test_wait"}
+`
+	tests := []struct {
+		name    string
+		content string
+		wantErr bool
+	}{
+		{"test_wait", content, false},
+	}
+	fch := make(chan *bcore.FinishEvent, 10)
+	RegisterDelegatorType(NameGameDdz, &GameDdz{})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := GlobalTreeRegistry().LoadFromJson([]byte(tt.content)); (err != nil) != tt.wantErr {
+				logger.Log.Error("", zap.Error(err))
+				t.Errorf("LoadFromPaths() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			for j := 1; j < 10; j++ {
+				ddz := &GameDdz{}
+				brain := NewBrain(bcore.NewBlackboard(j, nil), map[string]any{NameGameDdz: ddz}, fch)
+				ddz.brain = brain
+				brain.Run("test_wait", false)
+			}
 		})
 	}
 	<-fch

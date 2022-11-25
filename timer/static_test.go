@@ -1,6 +1,7 @@
 package timer
 
 import (
+	"math/rand"
 	"reflect"
 	"sync"
 	"testing"
@@ -10,6 +11,7 @@ import (
 )
 
 func helper() {
+	rand.Seed(time.Now().UnixNano())
 	InitPool(1, 10*time.Millisecond, 100)
 }
 
@@ -26,8 +28,8 @@ func TestAfter(t *testing.T) {
 		args args
 	}{
 		{"t1", args{
-			interval:        time.Second * 2,
-			randomDeviation: time.Second * 1,
+			interval:        time.Second * 3,
+			randomDeviation: time.Second * 6,
 			task: func() {
 				t.Log("t1 done")
 				wg.Done()
@@ -37,7 +39,12 @@ func TestAfter(t *testing.T) {
 	for _, tt := range tests {
 		wg.Add(1)
 		t.Run(tt.name, func(t *testing.T) {
-			After(tt.args.interval, tt.args.randomDeviation, tt.args.task, timingwheel.WithGoID(1))
+			for i := 0; i < 10; i++ {
+				st := time.Now()
+				After(tt.args.interval, tt.args.randomDeviation, func() {
+					t.Log(time.Since(st))
+				}, timingwheel.WithGoID(1))
+			}
 		})
 	}
 	wg.Wait()
