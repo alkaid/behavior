@@ -95,24 +95,38 @@ func (c *BBCondition) ConditionMet(brain bcore.IBrain, args ...any) bool {
 		return ret == bcore.ResultSucceeded
 	}
 	v, ok := brain.Blackboard().Get(c.BBConditionProperties().GetKey())
+	propValue := c.BBConditionProperties().GetValue()
+	if propValue == nil {
+		propValue = ""
+	}
 	switch c.BBConditionProperties().GetOperator() {
 	case bcore.OperatorIsSet, bcore.OperatorIsNotSet:
 		return ok
-	}
-	propValue := c.BBConditionProperties().GetValue()
-	switch realV := v.(type) {
-	case bool, string:
-		switch c.BBConditionProperties().GetOperator() {
-		case bcore.OperatorIsEqual:
-			return realV == propValue
-		case bcore.OperatorIsNotEqual:
-			return realV != propValue
+	case bcore.OperatorIsEqual, bcore.OperatorIsNotEqual:
+		if !ok {
+			switch realPropV := propValue.(type) {
+			case string:
+				return realPropV == ""
+			case bool:
+				return realPropV == false
+			}
+		} else {
+			switch realV := v.(type) {
+			case bool, string:
+				return realV == propValue
+			}
 		}
 	}
 	// 黑板value转float,配置value转float
 	var bbNumber, propNumber float64
 	var bbOk, propOk bool
-	bbNumber, bbOk = util.Float(v)
+	if !ok {
+		v = 0
+		bbNumber = 0
+		bbOk = true
+	} else {
+		bbNumber, bbOk = util.Float(v)
+	}
 	if bbOk {
 		propNumber, propOk = util.Float(propValue)
 	}
