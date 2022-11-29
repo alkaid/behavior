@@ -153,6 +153,7 @@ const (
 
 type GameDdz struct {
 	brain bcore.IBrain
+	idx   int
 }
 
 func (g *GameDdz) ReqOutCard() error {
@@ -162,4 +163,59 @@ func (g *GameDdz) ReqOutCard() error {
 func (g *GameDdz) ModifyOperateTipsState() error {
 	g.brain.Blackboard().Del(BBKeyGameDdzOperateTipsBool)
 	return nil
+}
+func (g *GameDdz) Login(eventType bcore.EventType, delta time.Duration) bcore.Result {
+	// 第 50 次成功
+	g.idx++
+	switch eventType {
+	case bcore.EventTypeOnAbort:
+		return bcore.ResultFailed
+	}
+	if rand.Float64() > 0.3 {
+		// g.brain.Blackboard().Del("test.close")
+		return bcore.ResultSucceeded
+	}
+	return bcore.ResultInProgress
+}
+
+func TestRunTree_TimeConsumingAction(t *testing.T) {
+	help()
+	content := `
+{"root":"c82/aXupVDYZ+Jn66qbaoV38B1D","nodes":{"b80d6ydKHFHN4mYTCfFeFDD71B76":{"id":"b80d6ydKHFHN4mYTCfFeFDD71B76","name":"Selector","title":"Selector","category":"composite","children":["30abbPs1ktNBKh96yn8dwj2415B6","05f6djYn2pOQ5r0h9lEccYA64680"],"properties":{},"delegator":{"target":"","method":"","script":""}},"30abbPs1ktNBKh96yn8dwj2415B6":{"id":"30abbPs1ktNBKh96yn8dwj2415B6","name":"BBCondition","title":"BBCondition","category":"decorator","children":["ae1d56a8BhFrJII8Z+xvZOI0D51F"],"properties":{"operator":0,"key":"test.close","value":"","abortMode":3},"delegator":{"target":"","method":"","script":""}},"ae1d56a8BhFrJII8Z+xvZOI0D51F":{"id":"ae1d56a8BhFrJII8Z+xvZOI0D51F","name":"Action","title":"login","category":"task","children":[],"properties":{},"delegator":{"target":"GameDdz","method":"Login","script":""}},"05f6djYn2pOQ5r0h9lEccYA64680":{"id":"05f6djYn2pOQ5r0h9lEccYA64680","name":"Wait","title":"Wait","category":"task","children":[],"properties":{"waitTime":"","randomDeviation":"","forever":true},"delegator":{"target":"","method":"","script":""}},"c82/aXupVDYZ+Jn66qbaoV38B1D":{"id":"c82/aXupVDYZ+Jn66qbaoV38B1D","name":"Root","category":"decorator","title":"Root","properties":{"once":false,"interval":""},"delegator":{},"children":["b80d6ydKHFHN4mYTCfFeFDD71B76"]}},"tag":"test_action"}`
+	tests := []struct {
+		name    string
+		content string
+		wantErr bool
+	}{
+		{"test_wait", content, false},
+	}
+	fch := make(chan *bcore.FinishEvent, 10)
+	RegisterDelegatorType(NameGameDdz, &GameDdz{})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := GlobalTreeRegistry().LoadFromJson([]byte(tt.content)); (err != nil) != tt.wantErr {
+				logger.Log.Error("", zap.Error(err))
+				t.Errorf("LoadFromPaths() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			for j := 1; j < 100; j++ {
+				ddz := &GameDdz{}
+				brain := NewBrain(bcore.NewBlackboard(j, nil), map[string]any{NameGameDdz: ddz}, fch)
+				ddz.brain = brain
+				brain.Run("test_action", false)
+				go func(ddz *GameDdz) {
+					for true {
+						time.Sleep(time.Duration(float64(10*time.Second) * rand.Float64()))
+						ddz.brain.Blackboard().Set("test.close", true)
+					}
+				}(ddz)
+				go func(ddz *GameDdz) {
+					for true {
+						time.Sleep(time.Duration(float64(10*time.Second) * rand.Float64()))
+						ddz.brain.Blackboard().Del("test.close")
+					}
+				}(ddz)
+			}
+		})
+	}
+	<-fch
 }
