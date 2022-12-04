@@ -203,13 +203,13 @@ func TestRunTree_TimeConsumingAction(t *testing.T) {
 				ddz.brain = brain
 				brain.Run("test_action", false)
 				go func(ddz *GameDdz) {
-					for true {
+					for {
 						time.Sleep(time.Duration(float64(10*time.Second) * rand.Float64()))
 						ddz.brain.Blackboard().Set("test.close", true)
 					}
 				}(ddz)
 				go func(ddz *GameDdz) {
-					for true {
+					for {
 						time.Sleep(time.Duration(float64(10*time.Second) * rand.Float64()))
 						ddz.brain.Blackboard().Del("test.close")
 					}

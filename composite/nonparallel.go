@@ -129,11 +129,15 @@ func (n *NonParallel) OnAbort(brain bcore.IBrain) {
 
 // OnChildFinished
 //
-//	@override Container.OnChildFinished
-//	@receiver r
-//	@param brain
-//	@param child
-//	@param succeeded
+//	 Sequence 碰到一个失败就Finish(false)
+//	 Selector 碰到一个成功就Finish(true)
+//	 若是被父节点中断的,马上Finish(false)
+//
+//		@override Container.OnChildFinished
+//		@receiver r
+//		@param brain
+//		@param child
+//		@param succeeded
 func (n *NonParallel) OnChildFinished(brain bcore.IBrain, child bcore.INode, succeeded bool) {
 	n.Composite.OnChildFinished(brain, child, succeeded)
 	// 只要一个成功 || 只要一个失败  就结束
@@ -155,7 +159,7 @@ func (n *NonParallel) processChildren(brain bcore.IBrain) {
 		n.Finish(brain, successWhenAllProcessed)
 		return
 	}
-	// 如果是被装饰器打断的,直接返回失败
+	// 如果是被父节点中断的,直接返回失败
 	if n.IsAborting(brain) {
 		n.Finish(brain, false)
 		return

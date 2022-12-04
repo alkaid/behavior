@@ -2,9 +2,9 @@ package decorator
 
 import (
 	"fmt"
-	"github.com/samber/lo"
 
 	"github.com/alkaid/behavior/bcore"
+	"github.com/samber/lo"
 
 	"github.com/alkaid/behavior/util"
 
@@ -112,7 +112,7 @@ func (c *BBCondition) ConditionMet(brain bcore.IBrain, args ...any) bool {
 			case string:
 				return lo.If(isEqualOp, realPropV == "").Else(realPropV != "")
 			case bool:
-				return lo.If(isEqualOp, realPropV == false).Else(realPropV != false)
+				return lo.If(isEqualOp, !realPropV).Else(realPropV)
 			}
 		} else {
 			switch realV := v.(type) {

@@ -14,6 +14,7 @@ type DelegateMeta struct {
 }
 
 type FinishEvent struct {
+	ID        int  // IBrain.ID
 	IsAbort   bool // 是否是终止的,false则为正常完成
 	Succeeded bool // 运行结果是否成功: Result is ResultSucceeded
 	IsActive  bool // 停止前是否活跃
@@ -21,6 +22,10 @@ type FinishEvent struct {
 
 // IBrain 大脑=行为树+记忆+委托对象集合. 也可以理解为上下文
 type IBrain interface {
+	// ID 唯一ID 即 IBlackboard.ThreadID
+	//
+	// @return int
+	ID() int
 	// FinishChan 树运行结束的信道
 	//  @return <-chan
 	FinishChan() <-chan *FinishEvent

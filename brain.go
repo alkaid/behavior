@@ -37,6 +37,10 @@ type Brain struct {
 	ctx           context.Context
 }
 
+func (b *Brain) ID() int {
+	return b.blackboard.ThreadID()
+}
+
 func (b *Brain) SetFinishChan(finishChan chan *bcore.FinishEvent) {
 	b.finishChan = finishChan
 }
@@ -139,6 +143,7 @@ func (b *Brain) Abort(abortChan chan *bcore.FinishEvent) {
 	// 派发到自己的线程
 	b.Go(func() {
 		event := &bcore.FinishEvent{
+			ID:        b.ID(),
 			IsAbort:   true,
 			Succeeded: false,
 			IsActive:  true,

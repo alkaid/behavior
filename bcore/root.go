@@ -183,6 +183,7 @@ func (r *Root) SafeAbort(brain IBrain, abortChan chan *FinishEvent) {
 	}
 	thread.GoByID(brain.Blackboard().(IBlackboardInternal).ThreadID(), func() {
 		event := &FinishEvent{
+			ID:        brain.ID(),
 			IsAbort:   true,
 			Succeeded: false,
 			IsActive:  true,
@@ -261,6 +262,7 @@ func (r *Root) Finish(brain IBrain, succeeded bool) {
 	// 若是主树 通知brain运行完成
 	brain.(IBrainInternal).SetRunningTree(nil)
 	event := &FinishEvent{
+		ID:        brain.ID(),
 		IsAbort:   isAborting,
 		Succeeded: succeeded,
 		IsActive:  true,
