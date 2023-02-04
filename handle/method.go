@@ -31,6 +31,7 @@ var (
 	typeOfDuration  = reflect.TypeOf(time.Duration(0))
 	typeOfEventType = reflect.TypeOf(bcore.EventType(0))
 	typeOfResult    = reflect.TypeOf(bcore.Result(0))
+	typeOfBool      = reflect.TypeOf(false)
 	// unused:typeOfBrain     = reflect.TypeOf((*bcore.IBrain)(nil)).Elem()
 	typeOfError = reflect.TypeOf((*error)(nil)).Elem()
 )
@@ -43,6 +44,7 @@ const (
 	MtFullStyle                                // 完全形态签名:(receiver) func(eventType bcore.EventType, delta time.Duration) bcore.Result
 	MtSimpleAction                             // 简单任务签名:(receiver) func()
 	MtSimpleActionWithErr                      // 简单任务带错误返回的签名:(receiver) func() error
+	MtSimpleActionWithBool                     // 简单任务带bool返回的签名:(receiver) func() bool
 	MtSimpleActionWithResult                   // 简单任务带 bcore.Result 返回的签名:(receiver) func() bcore.Result
 )
 
@@ -83,11 +85,14 @@ func isHandlerMethod(method reflect.Method) MethodType {
 		if mt.NumOut() == 0 {
 			return MtSimpleAction
 		}
-		// 需要1个出参 bcore.Result 或 error
+		// 需要1个出参 bcore.Result 或 error 或 bool
 		if mt.NumOut() == 1 {
 			t1 := mt.Out(0)
 			if t1 == typeOfResult {
 				return MtSimpleActionWithResult
+			}
+			if t1 == typeOfBool {
+				return MtSimpleActionWithBool
 			}
 			if t1.Kind() == reflect.Interface && t1.Implements(typeOfError) {
 				return MtSimpleActionWithErr

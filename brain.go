@@ -3,6 +3,7 @@ package behavior
 import (
 	"context"
 	"fmt"
+	"github.com/samber/lo"
 	"reflect"
 	"time"
 
@@ -263,6 +264,9 @@ func (b *Brain) OnNodeUpdate(target string, method string, brain bcore.IBrain, e
 		// 1个时判断是error还是result
 		if rets[0] == nil {
 			return bcore.ResultSucceeded
+		}
+		if result, ok := rets[0].(bool); ok {
+			return lo.If(result, bcore.ResultSucceeded).Else(bcore.ResultFailed)
 		}
 		if err, ok := rets[0].(error); ok {
 			// 不打印堆栈,堆栈由上层业务方打印
