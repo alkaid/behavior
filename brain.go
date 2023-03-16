@@ -3,9 +3,10 @@ package behavior
 import (
 	"context"
 	"fmt"
-	"github.com/samber/lo"
 	"reflect"
 	"time"
+
+	"github.com/samber/lo"
 
 	"github.com/alkaid/behavior/timer"
 	"github.com/alkaid/timingwheel"

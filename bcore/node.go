@@ -103,6 +103,7 @@ type INode interface {
 	//  @param parent
 	DynamicMount(brain IBrain, parent IContainer)
 	Log(brain IBrain, ops ...LogOption) *zap.Logger
+	Dump(brain IBrain) string
 }
 
 // INodeWorker Node 中会回调的方法,应该委托给继承树中的叶子子类实现
@@ -569,10 +570,13 @@ func (n *Node) Log(brain IBrain, ops ...LogOption) *zap.Logger {
 }
 
 func Print(node INode, brain IBrain) {
-	nodeContent := fmt.Sprintf("%s<%d>", node.Title(), node.Memory(brain).State)
+	fmt.Print(node.Dump(brain))
+}
+func (n *Node) Dump(brain IBrain) string {
+	nodeContent := fmt.Sprintf("%s<%d>", n.Title(), n.Memory(brain).State)
 	tree := gotree.New(nodeContent)
-	printStep(node, brain, tree)
-	fmt.Print(tree.Print())
+	printStep(n, brain, tree)
+	return tree.Print()
 }
 
 func printStep(node INode, brain IBrain, printerParent gotree.Tree) {
