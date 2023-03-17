@@ -575,7 +575,7 @@ func Print(node INode, brain IBrain) {
 func (n *Node) Dump(brain IBrain) string {
 	nodeContent := fmt.Sprintf("%s<%d>", n.Title(), n.Memory(brain).State)
 	tree := gotree.New(nodeContent)
-	printStep(n, brain, tree)
+	printStep(n.NodeWorkerAsNode(), brain, tree)
 	return tree.Print()
 }
 
@@ -583,13 +583,14 @@ func printStep(node INode, brain IBrain, printerParent gotree.Tree) {
 	if node.Category() == CategoryDecorator {
 		dec := node.(IDecorator)
 		if dec.Decorated(brain) != nil {
-			printStep(dec.Decorated(brain), brain, printerParent.Add(dec.Decorated(brain).Title()))
+			printStep(dec.Decorated(brain), brain, printerParent.Add(fmt.Sprintf("%s:%d", dec.Decorated(brain).Title(), node.State(brain))))
 		}
+		return
 	}
 	if node.Category() == CategoryComposite {
 		comp := node.(IComposite)
 		for _, child := range comp.Children() {
-			printStep(child, brain, printerParent.Add(child.Title()))
+			printStep(child, brain, printerParent.Add(fmt.Sprintf("%s:%d", child.Title(), node.State(brain))))
 		}
 	}
 }
