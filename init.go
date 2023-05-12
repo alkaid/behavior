@@ -24,9 +24,10 @@ import (
 )
 
 // InitSystem 系统初始化
-//  要使用该库必须先初始化
-//  @param option
-//  @panic 若发生异常将主动panic
+//
+//	要使用该库必须先初始化
+//	@param option
+//	@panic 若发生异常将主动panic
 func InitSystem(opts ...Option) {
 	rand.Seed(time.Now().UnixNano())
 	option := &InitialOption{
@@ -91,21 +92,21 @@ func InitSystem(opts ...Option) {
 }
 
 type InitialOption struct {
-	ThreadPool        *ants.Pool     // 线程池 为空则使用默认
-	TimerPoolSize     int            // 时间轮池子容量 为0则使用默认
-	TimerInterval     time.Duration  // 时间轮帧间隔 为0则使用默认
-	TimerNumSlots     int            // 时间槽数量 时间轮第一层总时长=interval*numSlots 为0则使用默认
-	LogLevel          zapcore.Level  // 日志级别
-	LogDevelopment    bool           // 日志模式是否开发模式
-	CustomNodeClass   []bcore.INode  // 用于注册自定义节点类
-	ScriptPoolMinSize int            // 脚本引擎池子最小容量
-	ScriptPoolMaxSize int            // 脚本引擎池子最大容量
-	ScriptPoolApiLib  map[string]any // 需注入到脚本引擎池的api库,最好仅注入一些公共的无状态函数或参数,避免状态副作用
+	ThreadPool        *ants.PoolWithID // 线程池 为空则使用默认
+	TimerPoolSize     int              // 时间轮池子容量 为0则使用默认
+	TimerInterval     time.Duration    // 时间轮帧间隔 为0则使用默认
+	TimerNumSlots     int              // 时间槽数量 时间轮第一层总时长=interval*numSlots 为0则使用默认
+	LogLevel          zapcore.Level    // 日志级别
+	LogDevelopment    bool             // 日志模式是否开发模式
+	CustomNodeClass   []bcore.INode    // 用于注册自定义节点类
+	ScriptPoolMinSize int              // 脚本引擎池子最小容量
+	ScriptPoolMaxSize int              // 脚本引擎池子最大容量
+	ScriptPoolApiLib  map[string]any   // 需注入到脚本引擎池的api库,最好仅注入一些公共的无状态函数或参数,避免状态副作用
 }
 
 type Option func(option *InitialOption)
 
-func WithThreadPool(pool *ants.Pool) Option {
+func WithThreadPool(pool *ants.PoolWithID) Option {
 	return func(option *InitialOption) {
 		option.ThreadPool = pool
 	}

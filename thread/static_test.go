@@ -49,11 +49,11 @@ func Test_ThreadSafe(t *testing.T) {
 			}
 		}
 	})
-	p, err := ants.NewPool(ants.DefaultAntsPoolSize, ants.WithTaskBuffer(ants.DefaultStatefulTaskBuffer), ants.WithExpiryDuration(time.Hour))
+	p, err := ants.NewPoolWithID(ants.DefaultAntsPoolSize, ants.WithExpiryDuration(time.Hour))
 	if err != nil {
 		t.Error(err)
 	}
-	p.SubmitWithID(1, func() {
+	p.Submit(1, func() {
 		for i := 0; i < 5; i++ {
 			t.Log("t4.1:", i)
 			time.Sleep(time.Second)
@@ -110,7 +110,7 @@ func TestGoMain(t *testing.T) {
 
 func TestInitPool(t *testing.T) {
 	type args struct {
-		p *ants.Pool
+		p *ants.PoolWithID
 	}
 	tests := []struct {
 		name    string

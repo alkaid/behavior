@@ -13,15 +13,16 @@ import (
 )
 
 const MainThreadID = math.MaxInt // 主线程ID
+const DefaultTaskBuffer = 100
 
-var pool *ants.Pool // 线程池,主要用于分离session线程
+var pool *ants.PoolWithID // 线程池,主要用于分离session线程
 
-func PoolInstance() *ants.Pool {
+func PoolInstance() *ants.PoolWithID {
 	return pool
 }
 
 // InitPool 用默认参数初始化全局线程池
-func InitPool(p *ants.Pool) error {
+func InitPool(p *ants.PoolWithID) error {
 	if pool != nil {
 		logger.Log.Warn("init goroutine pool duplicate")
 		return nil
@@ -30,7 +31,11 @@ func InitPool(p *ants.Pool) error {
 		pool = p
 		return nil
 	}
-	p, err := ants.NewPool(ants.DefaultAntsPoolSize, ants.WithTaskBuffer(ants.DefaultStatefulTaskBuffer), ants.WithExpiryDuration(time.Hour))
+	p, err := ants.NewPoolWithID(
+		ants.DefaultAntsPoolSize,
+		ants.WithTaskBuffer(DefaultTaskBuffer),
+		ants.WithExpiryDuration(time.Hour),
+		ants.WithDisablePurgeRunning(true))
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -51,7 +56,7 @@ func ReleaseTableGoPool() {
 //	@param task
 func GoByID[T int | int32 | int64](goID T, task func()) {
 	if goID > 0 {
-		err := pool.SubmitWithID(int(goID), task)
+		err := pool.Submit(int(goID), task)
 		if err != nil {
 			logger.Log.Error("submit goroutine with id error", zap.Error(err), zap.Int("goID", int(goID)))
 			return
