@@ -3,7 +3,7 @@ module github.com/alkaid/behavior
 go 1.19
 
 require (
-	github.com/alkaid/timingwheel v1.0.4
+	github.com/alkaid/timingwheel v1.0.5
 	github.com/disiqueira/gotree v1.0.0
 	github.com/google/go-cmp v0.5.9
 	github.com/matoous/go-nanoid v1.5.0

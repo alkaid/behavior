@@ -1,7 +1,7 @@
 github.com/alkaid/ants/v2 v2.7.403 h1:NB78qUu64c358q0FtVxgxdKxJXSpLuSWQm+6avMLUzI=
 github.com/alkaid/ants/v2 v2.7.403/go.mod h1:KIBmYG9QQX5U2qzFP/yQJaq/nSb6rahS9iEHkrCMgM8=
-github.com/alkaid/timingwheel v1.0.4 h1:koObLWM/Od7Bv5/7Hkh9d+wAzfCZ7p+0k6rLc96ut2s=
-github.com/alkaid/timingwheel v1.0.4/go.mod h1:VxPQ6WCMRm27VMzkmfFZ5J/Z5s7jiZa0w5GLPsAwjmQ=
+github.com/alkaid/timingwheel v1.0.5 h1:KigbDN0nzjD21czQ6MWE6oYata419CNMxTtPwJr91/Q=
+github.com/alkaid/timingwheel v1.0.5/go.mod h1:VxPQ6WCMRm27VMzkmfFZ5J/Z5s7jiZa0w5GLPsAwjmQ=
 github.com/benbjohnson/clock v1.1.0 h1:Q92kusRqC1XV2MjkWETPvjJVqKetz1OzxZB7mHJLju8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
