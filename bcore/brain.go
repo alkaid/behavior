@@ -33,6 +33,7 @@ type IBrain interface {
 	// Blackboard 获取黑板
 	//  @return IBlackboard
 	Blackboard() IBlackboard
+	RegisterDelegate(name string, delegate any)
 	// GetDelegate 获取委托
 	//  @param name
 	//  @return delegate
