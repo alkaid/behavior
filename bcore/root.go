@@ -26,7 +26,7 @@ type rootProperties struct {
 	Once            bool          `json:"once"`            // 是否仅运行一次,反之永远循环
 	Interval        util.Duration `json:"interval"`        // 默认帧率(每帧更新间隔,默认50ms)
 	LoopInterval    util.Duration `json:"loopInterval"`    // 每次运行之间的间隔
-	RandomDeviation util.Duration `json:"randomDeviation"` // 每次运行随机偏差: LoopInterval = LoopInterval + RandomDeviation*[-0.5,0.5)
+	RandomDeviation util.Duration `json:"randomDeviation"` // 每次运行随机离差: LoopInterval = LoopInterval + RandomDeviation*[-0.5,0.5)
 }
 
 func (r *rootProperties) IsOnce() bool {

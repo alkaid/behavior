@@ -16,7 +16,7 @@ type IServiceProperties interface {
 // ServiceProperties 服务节点属性
 type ServiceProperties struct {
 	Interval        util.Duration `json:"interval"`        // 执行间隔，配0则为行为树默认时间轮间隔
-	RandomDeviation util.Duration `json:"randomDeviation"` // 随机偏差:将一个随机范围数值添加至服务节点的 时间间隔 Interval 。Interval = Interval + RandomDeviation * [-0.5,0.5)
+	RandomDeviation util.Duration `json:"randomDeviation"` // 随机离差:将一个随机范围数值添加至服务节点的 时间间隔 Interval 。Interval = Interval + RandomDeviation * [-0.5,0.5)
 }
 
 func (s *ServiceProperties) GetInterval() time.Duration {

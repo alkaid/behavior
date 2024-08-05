@@ -16,7 +16,7 @@ type ITimeMinProperties interface {
 // TimeMinProperties 最小时限装饰器属性
 type TimeMinProperties struct {
 	Limit                util.Duration `json:"Limit"`                // 最小时限
-	RandomDeviation      util.Duration `json:"randomDeviation"`      // 随机偏差:将一个随机范围数值添加至服务节点的 Limit 值。Limit = Limit + RandomDeviation * [-0.5,0.5)
+	RandomDeviation      util.Duration `json:"randomDeviation"`      // 随机离差:将一个随机范围数值添加至服务节点的 Limit 值。Limit = Limit + RandomDeviation * [-0.5,0.5)
 	FinishOnChildFailure bool          `json:"finishOnChildFailure"` // true:子节点返回false时，当前节点会立即停用并返回false false:子节点返回时，当前节点会等到直到达到时间限制后才停用
 }
 

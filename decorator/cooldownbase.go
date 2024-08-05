@@ -20,7 +20,7 @@ type CooldownBaseProperties struct {
 	StartAfterDecorated bool          `json:"startAfterDecorated"` // 是否在子节点完成后才进入cd
 	ResetOnFailure      bool          `json:"resetOnFailure"`      // 子节点取消后是否重置cd
 	FailOnCoolDown      bool          `json:"failOnCoolDown"`      // true:cd时间未到却被请求执行时停用当前节点并返回false false:什么都不做
-	RandomDeviation     util.Duration `json:"randomDeviation"`     // 随机偏差:冷却时间 ICooldownBaseWorker.CooldownTime = CooldownTime + RandomDeviation*[-0.5,0.5)
+	RandomDeviation     util.Duration `json:"randomDeviation"`     // 随机离差:冷却时间 ICooldownBaseWorker.CooldownTime = CooldownTime + RandomDeviation*[-0.5,0.5)
 }
 
 func (p *CooldownBaseProperties) GetStartAfterDecorated() bool {

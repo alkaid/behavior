@@ -289,7 +289,7 @@ func (b *Brain) OnNodeUpdate(target string, method string, brain bcore.IBrain, e
 // Cron wrap timingwheel.TimingWheel .Cron
 //
 //	@param interval 间隔
-//	@param randomDeviation 随机方差范围,interval=interval+randomDeviation*[-0.5,0.5)
+//	@param randomDeviation 随机离差范围,interval=interval+randomDeviation*[-0.5,0.5)
 //	@param task
 //	@param opts
 func (b *Brain) Cron(interval time.Duration, randomDeviation time.Duration, task func()) *timingwheel.Timer {
@@ -299,7 +299,7 @@ func (b *Brain) Cron(interval time.Duration, randomDeviation time.Duration, task
 // After wrap timingwheel.TimingWheel .AfterFunc
 //
 //	@param interval 间隔
-//	@param randomDeviation 随机方差范围 interval = interval + randomDeviation*[-0.5,0.5)
+//	@param randomDeviation 随机离差范围 interval = interval + randomDeviation*[-0.5,0.5)
 //	@param task
 //	@param opts
 func (b *Brain) After(interval time.Duration, randomDeviation time.Duration, task func()) *timingwheel.Timer {

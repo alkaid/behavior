@@ -18,7 +18,7 @@ type IWaitBBProperties interface {
 // WaitBBProperties 等待黑板时间属性
 type WaitBBProperties struct {
 	Key             string        `json:"key"`             // 引用的黑板键，确定等待时间
-	RandomDeviation util.Duration `json:"randomDeviation"` // 随机偏差:允许向 等待时间（WaitTime）属性添加随机时间 WaitTime=WaitTime+RandomDeviation*[-0.5,0.5)
+	RandomDeviation util.Duration `json:"randomDeviation"` // 随机离差:允许向 等待时间（WaitTime）属性添加随机时间 WaitTime=WaitTime+RandomDeviation*[-0.5,0.5)
 }
 
 func (w *WaitBBProperties) GetKey() string {

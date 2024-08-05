@@ -33,7 +33,7 @@ func TimeWheelInstance() *timingwheel.TimingWheel {
 // Cron wrap timingwheel.TimingWheel .Cron
 //
 //	@param interval 间隔
-//	@param randomDeviation 随机方差范围,interval=interval+randomDeviation*[-0.5,0.5)
+//	@param randomDeviation 随机离差范围,interval=interval+randomDeviation*[-0.5,0.5)
 //	@param task
 //	@param opts
 func Cron(interval time.Duration, randomDeviation time.Duration, task func(), opts ...timingwheel.Option) *timingwheel.Timer {
@@ -44,7 +44,7 @@ func Cron(interval time.Duration, randomDeviation time.Duration, task func(), op
 // After wrap timingwheel.TimingWheel .AfterFunc
 //
 //	@param interval 间隔
-//	@param randomDeviation 随机方差范围 interval = interval + randomDeviation*[-0.5,0.5)
+//	@param randomDeviation 随机离差范围 interval = interval + randomDeviation*[-0.5,0.5)
 //	@param task
 //	@param opts
 func After(interval time.Duration, randomDeviation time.Duration, task func(), opts ...timingwheel.Option) *timingwheel.Timer {
