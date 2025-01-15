@@ -165,7 +165,12 @@ func (b *Brain) Abort(abortChan chan *bcore.FinishEvent) {
 		}
 	})
 }
-func (b *Brain) Run(tag string, force bool) {
+func (b *Brain) Run(tag string, force bool) error {
+	tree := GlobalTreeRegistry().GetNotParentTreeWithoutClone(tag)
+	if tree == nil || tree.Root == nil {
+		err := errors.New(fmt.Sprintf("can not find main tree for tag %s", tag))
+		return err
+	}
 	b.Go(func() {
 		if b.Running() && b.RunningTree().IsActive(b) {
 			if force {
@@ -175,13 +180,10 @@ func (b *Brain) Run(tag string, force bool) {
 				return
 			}
 		} else {
-			tree := GlobalTreeRegistry().GetNotParentTreeWithoutClone(tag)
-			if tree == nil || tree.Root == nil {
-				logger.Log.Warn("can not find main tree for tag", zap.String("tag", tag))
-			}
 			tree.Root.Start(b)
 		}
 	})
+	return nil
 }
 
 // DynamicDecorate 给正在运行的树动态挂载子树.暂时只支持主树上的动态容器

@@ -8,7 +8,7 @@ import (
 )
 
 var pool *TimeWheelPool // 全局时间轮单例,必须调用 InitPool 后方可使用
-const minRandomDeviationRate = 0.5
+const half = 0.5
 
 // InitPool 初始化 pool
 //
@@ -37,7 +37,7 @@ func TimeWheelInstance() *timingwheel.TimingWheel {
 //	@param task
 //	@param opts
 func Cron(interval time.Duration, randomDeviation time.Duration, task func(), opts ...timingwheel.Option) *timingwheel.Timer {
-	interval = interval - time.Duration(minRandomDeviationRate*float32(randomDeviation)) + time.Duration(rand.Float32()*float32(randomDeviation))
+	interval = interval - time.Duration(half*float32(randomDeviation)) + time.Duration(rand.Float32()*float32(randomDeviation))
 	return TimeWheelInstance().Cron(interval, task, opts...)
 }
 
@@ -48,6 +48,6 @@ func Cron(interval time.Duration, randomDeviation time.Duration, task func(), op
 //	@param task
 //	@param opts
 func After(interval time.Duration, randomDeviation time.Duration, task func(), opts ...timingwheel.Option) *timingwheel.Timer {
-	interval = interval - time.Duration(minRandomDeviationRate*float32(randomDeviation)) + time.Duration(rand.Float32()*float32(randomDeviation))
+	interval = interval - time.Duration(half*float32(randomDeviation)) + time.Duration(rand.Float32()*float32(randomDeviation))
 	return TimeWheelInstance().AfterFunc(interval, task, opts...)
 }

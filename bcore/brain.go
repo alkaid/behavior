@@ -59,7 +59,7 @@ type IBrain interface {
 	//
 	// @param tag
 	// @param force 是否强制终止正在运行的树
-	Run(tag string, force bool)
+	Run(tag string, force bool) error
 	// DynamicDecorate 给正在运行的树动态挂载子树
 	//
 	//	非线程安全,调用方自己保证
