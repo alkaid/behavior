@@ -28,7 +28,9 @@ const (
 // Blackboard.observers 的元素无法存储范型方法,只能先改用any，未来go支持以后再改为范型方法
 // type Observer[T any] func(op OpType, key string, oldValue T, newValue T)
 
-type Observer func(op OpType, key string, oldValue any, newValue any)
+type Observer interface {
+	Fire(op OpType, key string, oldValue any, newValue any)
+}
 
 // Blackboard
 //
@@ -153,7 +155,7 @@ func (b *Blackboard) Stop() {
 	}
 }
 
-// AddObserver
+// AddObserver 非线程安全,请在树自己的线程内调用
 //
 //	@implement IBlackboardInternal.AddObserver
 //	@receiver b
@@ -163,7 +165,7 @@ func (b *Blackboard) AddObserver(key string, observer Observer) {
 	b.addOrRmObserver(true, key, observer)
 }
 
-// RemoveObserver
+// RemoveObserver 非线程安全,请在树自己的线程内调用
 //
 //	@implement IBlackboardInternal.RemoveObserver
 //	@receiver b
@@ -173,44 +175,40 @@ func (b *Blackboard) RemoveObserver(key string, observer Observer) {
 	b.addOrRmObserver(false, key, observer)
 }
 
-// addOrRmObserver
+// addOrRmObserver 非线程安全,请在树自己的线程内调用
 //
 //	@receiver b
 //	@param add
 //	@param key
 //	@param observer
 func (b *Blackboard) addOrRmObserver(add bool, key string, observer Observer) {
-	// 无论调用方是否在AI线程里,都兜底派发到AI线程,避免和监听函数并行
-	thread.GoByID(b.threadID, func() {
-		if !b.enable {
-			return
-		}
-		observers, ok := b.observers[key]
-		contains := false
-		if !ok {
-			observers = make([]Observer, 0)
-			b.observers[key] = observers
-		} else {
+	if !b.enable {
+		return
+	}
+	observers, ok := b.observers[key]
+	contains := false
+	if !ok {
+		observers = make([]Observer, 0)
+		b.observers[key] = observers
+	} else {
+		contains = lo.ContainsBy(observers, func(v Observer) bool { return observer == v })
+	}
+	if !add {
+		if contains {
 			observerPtr := reflect.ValueOf(observer).Pointer()
-			contains = lo.ContainsBy(observers, func(v Observer) bool { return observerPtr == reflect.ValueOf(v).Pointer() })
-		}
-		if !add {
-			if contains {
-				observerPtr := reflect.ValueOf(observer).Pointer()
-				b.observers[key] = lo.DropWhile(observers, func(v Observer) bool {
-					return observerPtr == reflect.ValueOf(v).Pointer()
-				})
-				return
-			}
-			logger.Log.Debug("[blackboard]remove observer failed. observers not contained this observer", zap.String("key", key))
+			b.observers[key] = lo.DropWhile(observers, func(v Observer) bool {
+				return observerPtr == reflect.ValueOf(v).Pointer()
+			})
 			return
 		}
-		if !contains {
-			b.observers[key] = append(b.observers[key], observer)
-			return
-		}
-		logger.Log.Debug("[blackboard]add observer failed. observers already contained this observer", zap.String("key", key))
-	})
+		logger.Log.Debug("[blackboard]remove observer failed. observers not contained this observer", zap.String("key", key))
+		return
+	}
+	if !contains {
+		b.observers[key] = append(b.observers[key], observer)
+		return
+	}
+	logger.Log.Debug("[blackboard]add observer failed. observers already contained this observer", zap.String("key", key))
 }
 
 // notify 黑板数据(用户域)改变时通知监听函数执行
@@ -227,7 +225,7 @@ func (b *Blackboard) notify(op OpType, key string, oldVal any, newVal any) {
 			return
 		}
 		for _, ob := range b.observers[key] {
-			ob(op, key, oldVal, newVal)
+			ob.Fire(op, key, oldVal, newVal)
 		}
 	})
 }

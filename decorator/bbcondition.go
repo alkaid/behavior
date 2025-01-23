@@ -174,9 +174,7 @@ func (c *BBCondition) OnString(brain bcore.IBrain) string {
 func (c *BBCondition) getObserver(brain bcore.IBrain) bcore.Observer {
 	ob := c.Memory(brain).DefaultObserver
 	if ob == nil {
-		ob = func(op bcore.OpType, key string, oldValue any, newValue any) {
-			c.ObservingDecorator.Evaluate(brain, op, key, oldValue, newValue)
-		}
+		ob = c.ObservingDecorator.NewBlackboardObserver(brain)
 		c.Memory(brain).DefaultObserver = ob
 	}
 	return ob

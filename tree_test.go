@@ -14,7 +14,7 @@ import (
 )
 
 func help() {
-	InitSystem(WithLogDevelopment(true), WithLogLevel(zapcore.InfoLevel))
+	InitSystem(WithLogDevelopment(true), WithLogLevel(zapcore.DebugLevel))
 }
 
 func TestTreeRegistry_LoadFromPaths(t *testing.T) {
@@ -79,7 +79,7 @@ func TestWaitNode(t *testing.T) {
 		{"test_wait", content, false},
 	}
 	fch := make(chan *bcore.FinishEvent, 10)
-	RegisterDelegatorType(NameGameDdz, &GameDdz{})
+	RegisterDelegatorType(nameGameDdz, &GameDdz{})
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := GlobalTreeRegistry().LoadFromJson([]byte(tt.content)); (err != nil) != tt.wantErr {
@@ -88,7 +88,7 @@ func TestWaitNode(t *testing.T) {
 			}
 			for j := 1; j < 10; j++ {
 				ddz := &GameDdz{}
-				brain := NewBrain(bcore.NewBlackboard(j, nil), map[string]any{NameGameDdz: ddz}, fch)
+				brain := NewBrain(bcore.NewBlackboard(j, nil), map[string]any{nameGameDdz: ddz}, fch)
 				ddz.brain = brain
 				brain.Run("test_wait", false)
 			}
@@ -116,7 +116,7 @@ func TestRunTree_ThreadSafe(t *testing.T) {
 		{"thread", content, false},
 	}
 	fch := make(chan *bcore.FinishEvent, 10)
-	RegisterDelegatorType(NameGameDdz, &GameDdz{})
+	RegisterDelegatorType(nameGameDdz, &GameDdz{})
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := GlobalTreeRegistry().LoadFromJson([]byte(tt.content)); (err != nil) != tt.wantErr {
@@ -125,7 +125,7 @@ func TestRunTree_ThreadSafe(t *testing.T) {
 			}
 			for j := 1; j < 4; j++ {
 				ddz := &GameDdz{}
-				brain := NewBrain(bcore.NewBlackboard(j, nil), map[string]any{NameGameDdz: ddz}, fch)
+				brain := NewBrain(bcore.NewBlackboard(j, nil), map[string]any{nameGameDdz: ddz}, fch)
 				ddz.brain = brain
 				brain.Run("Play", false)
 
@@ -136,7 +136,7 @@ func TestRunTree_ThreadSafe(t *testing.T) {
 						}
 						delay := time.Duration(rand.Float32() * float32(time.Second) * 5)
 						time.Sleep(delay)
-						brain.Blackboard().Set(BBKeyGameDdzOperateTipsBool, true)
+						brain.Blackboard().Set(bbKeyGameDdzOperateTipsBool, true)
 					}
 				}(brain)
 			}
@@ -145,9 +145,9 @@ func TestRunTree_ThreadSafe(t *testing.T) {
 	<-fch
 }
 
-const NameGameDdz = "GameDdz"
+const nameGameDdz = "GameDdz"
 const (
-	BBKeyGameDdzOperateTipsBool = "gameDdz.operate.bool" // 是否自己收到操作提示
+	bbKeyGameDdzOperateTipsBool = "gameDdz.operate.bool" // 是否自己收到操作提示
 
 )
 
@@ -161,7 +161,7 @@ func (g *GameDdz) ReqOutCard() error {
 }
 
 func (g *GameDdz) ModifyOperateTipsState() error {
-	g.brain.Blackboard().Del(BBKeyGameDdzOperateTipsBool)
+	g.brain.Blackboard().Del(bbKeyGameDdzOperateTipsBool)
 	return nil
 }
 func (g *GameDdz) Login(eventType bcore.EventType, delta time.Duration) bcore.Result {
@@ -190,7 +190,7 @@ func TestRunTree_TimeConsumingAction(t *testing.T) {
 		{"test_wait", content, false},
 	}
 	fch := make(chan *bcore.FinishEvent, 10)
-	RegisterDelegatorType(NameGameDdz, &GameDdz{})
+	RegisterDelegatorType(nameGameDdz, &GameDdz{})
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := GlobalTreeRegistry().LoadFromJson([]byte(tt.content)); (err != nil) != tt.wantErr {
@@ -199,7 +199,7 @@ func TestRunTree_TimeConsumingAction(t *testing.T) {
 			}
 			for j := 1; j < 100; j++ {
 				ddz := &GameDdz{}
-				brain := NewBrain(bcore.NewBlackboard(j, nil), map[string]any{NameGameDdz: ddz}, fch)
+				brain := NewBrain(bcore.NewBlackboard(j, nil), map[string]any{nameGameDdz: ddz}, fch)
 				ddz.brain = brain
 				brain.Run("test_action", false)
 				go func(ddz *GameDdz) {
@@ -218,4 +218,51 @@ func TestRunTree_TimeConsumingAction(t *testing.T) {
 		})
 	}
 	<-fch
+}
+
+func TestMsgOnPushNotSeq(t *testing.T) {
+	help()
+	content := `
+{"root":"81Ck/5iexL57cz90zKqFPzDF867","nodes":{"bfc337GZiFHa6LmtDp4VmsAA8205":{"id":"bfc337GZiFHa6LmtDp4VmsAA8205","name":"Succeeded","title":"ak.Succeeded","category":"decorator","children":["30abbPs1ktNBKh96yn8dwj26F754"],"properties":{},"delegator":{"target":"","method":"","script":""}},"becf7thI19O2K973s5Yb7xnBEAE6":{"id":"becf7thI19O2K973s5Yb7xnBEAE6","name":"Sequence","title":"Sequence","category":"composite","children":["bfc337GZiFHa6LmtDp4VmsAA8205","b80d6ydKHFHN4mYTCfFeFDD6E50B"],"properties":{},"delegator":{"target":"","method":"","script":""}},"30abbPs1ktNBKh96yn8dwj26F754":{"id":"30abbPs1ktNBKh96yn8dwj26F754","name":"BBCondition","title":"是否结算","category":"decorator","children":["becf7thI19O2K973s5Yb7xn17BF5"],"properties":{"operator":2,"key":"gameFsmj.subscene.int","value":-1,"abortMode":3},"delegator":{"target":"","method":"","script":""}},"becf7thI19O2K973s5Yb7xn17BF5":{"id":"becf7thI19O2K973s5Yb7xn17BF5","name":"Sequence","title":"结算","category":"composite","children":["ae1d56a8BhFrJII8Z+xvZOI159E2"],"properties":{},"delegator":{"target":"","method":"","script":""}},"ae1d56a8BhFrJII8Z+xvZOI159E2":{"id":"ae1d56a8BhFrJII8Z+xvZOI159E2","name":"Action","title":"ak.Action","category":"task","children":[],"properties":{},"delegator":{"target":"","method":"","script":""}},"b80d6ydKHFHN4mYTCfFeFDD6E50B":{"id":"b80d6ydKHFHN4mYTCfFeFDD6E50B","name":"Selector","title":"选择场景","category":"composite","children":["30abbPs1ktNBKh96yn8dwj200FA4","30abbPs1ktNBKh96yn8dwj2616E3","30abbPs1ktNBKh96yn8dwj2C7188","05f6djYn2pOQ5r0h9lEccYA5D998"],"properties":{},"delegator":{"target":"","method":"","script":""}},"30abbPs1ktNBKh96yn8dwj200FA4":{"id":"30abbPs1ktNBKh96yn8dwj200FA4","name":"BBCondition","title":"是否天命发牌","category":"decorator","children":["becf7thI19O2K973s5Yb7xnC0943"],"properties":{"operator":2,"key":"gameFsmj.subscene.int","value":1,"abortMode":3},"delegator":{"target":"","method":"","script":""}},"becf7thI19O2K973s5Yb7xnC0943":{"id":"becf7thI19O2K973s5Yb7xnC0943","name":"Sequence","title":"发牌","category":"composite","children":["05f6djYn2pOQ5r0h9lEccYAFBD22"],"properties":{},"delegator":{"target":"","method":"","script":""}},"05f6djYn2pOQ5r0h9lEccYAFBD22":{"id":"05f6djYn2pOQ5r0h9lEccYAFBD22","name":"Wait","title":"发牌等待","category":"task","children":[],"properties":{"waitTime":"","randomDeviation":"","forever":true},"delegator":{"target":"","method":"","script":""}},"30abbPs1ktNBKh96yn8dwj2616E3":{"id":"30abbPs1ktNBKh96yn8dwj2616E3","name":"BBCondition","title":"是否天命操作","category":"decorator","children":["becf7thI19O2K973s5Yb7xnC3235"],"properties":{"operator":2,"key":"gameFsmj.subscene.int","value":2,"abortMode":3},"delegator":{"target":"","method":"","script":""}},"becf7thI19O2K973s5Yb7xnC3235":{"id":"becf7thI19O2K973s5Yb7xnC3235","name":"Sequence","title":"天命","category":"composite","children":["ae1d56a8BhFrJII8Z+xvZOI058C7","05f6djYn2pOQ5r0h9lEccYAE2D0A"],"properties":{},"delegator":{"target":"","method":"","script":""}},"ae1d56a8BhFrJII8Z+xvZOI058C7":{"id":"ae1d56a8BhFrJII8Z+xvZOI058C7","name":"Action","title":"天命操作","category":"task","children":[],"properties":{},"delegator":{"target":"GameDdz","method":"ReqRise","script":""}},"05f6djYn2pOQ5r0h9lEccYAE2D0A":{"id":"05f6djYn2pOQ5r0h9lEccYAE2D0A","name":"Wait","title":"天命等待","category":"task","children":[],"properties":{"waitTime":"","randomDeviation":"","forever":true},"delegator":{"target":"","method":"","script":""}},"30abbPs1ktNBKh96yn8dwj2C7188":{"id":"30abbPs1ktNBKh96yn8dwj2C7188","name":"BBCondition","title":"是否打牌场景","category":"decorator","children":["becf7thI19O2K973s5Yb7xn878A2"],"properties":{"operator":2,"key":"gameFsmj.subscene.int","value":3,"abortMode":3},"delegator":{"target":"","method":"","script":""}},"becf7thI19O2K973s5Yb7xn878A2":{"id":"becf7thI19O2K973s5Yb7xn878A2","name":"Sequence","title":"打牌场景","category":"composite","children":["ae1d56a8BhFrJII8Z+xvZOIF1078","05f6djYn2pOQ5r0h9lEccYA9F673"],"properties":{},"delegator":{"target":"","method":"","script":""}},"ae1d56a8BhFrJII8Z+xvZOIF1078":{"id":"ae1d56a8BhFrJII8Z+xvZOIF1078","name":"Action","title":"出牌","category":"task","children":[],"properties":{},"delegator":{"target":"GameDdz","method":"ReqOpt","script":""}},"05f6djYn2pOQ5r0h9lEccYA9F673":{"id":"05f6djYn2pOQ5r0h9lEccYA9F673","name":"Wait","title":"出牌等待","category":"task","children":[],"properties":{"waitTime":"","randomDeviation":"","forever":true},"delegator":{"target":"","method":"","script":""}},"05f6djYn2pOQ5r0h9lEccYA5D998":{"id":"05f6djYn2pOQ5r0h9lEccYA5D998","name":"Wait","title":"空闲等待","category":"task","children":[],"properties":{"waitTime":"","randomDeviation":"","forever":true},"delegator":{"target":"","method":"","script":""}},"81Ck/5iexL57cz90zKqFPzDF867":{"id":"81Ck/5iexL57cz90zKqFPzDF867","name":"Root","category":"decorator","title":"Root","properties":{"once":true,"interval":""},"delegator":{},"children":["becf7thI19O2K973s5Yb7xnBEAE6"]}},"tag":"GameFsmj"}
+`
+	if err := GlobalTreeRegistry().LoadFromJson([]byte(content)); err != nil {
+		t.Error(err)
+	}
+	fch := make(chan *bcore.FinishEvent, 10)
+	ddz := &GameDdz{}
+	RegisterDelegatorType(nameGameDdz, ddz)
+	brain := NewBrain(bcore.NewBlackboard(100, nil), map[string]any{nameGameDdz: ddz}, fch)
+	ddz.brain = brain
+	if err := brain.Run("GameFsmj", false); err != nil {
+		t.Error(err)
+	}
+	brain.Blackboard().Set("gameFsmj.subscene.int", 3)
+	<-fch
+}
+
+var count = 0
+
+func (g *GameDdz) ReqOpt() error {
+	count++
+	go func() {
+		if count > 2 {
+			g.brain.Blackboard().Set("gameFsmj.subscene.int", -1)
+		} else {
+			g.brain.Blackboard().Set("gameFsmj.subscene.int", 2)
+		}
+	}()
+	time.Sleep(time.Second)
+	return nil
+}
+func (g *GameDdz) ReqRise() error {
+	count++
+	go func() {
+		if count > 2 {
+			g.brain.Blackboard().Set("gameFsmj.subscene.int", -1)
+		} else {
+			g.brain.Blackboard().Set("gameFsmj.subscene.int", 3)
+		}
+	}()
+	time.Sleep(time.Second)
+	return nil
 }

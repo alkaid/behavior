@@ -209,6 +209,13 @@ func (o *ObservingDecorator) StopObserving(brain IBrain) {
 	o.Log(brain).Debug(o.String(brain) + " StopObserving")
 }
 
+func (o *ObservingDecorator) NewBlackboardObserver(brain IBrain) Observer {
+	return &simpleBackboardObserver{
+		brain: brain,
+		o:     o,
+	}
+}
+
 // ConditionMet panic
 //
 //	@receiver o
@@ -217,4 +224,13 @@ func (o *ObservingDecorator) StopObserving(brain IBrain) {
 //	@return bool
 func (o *ObservingDecorator) ConditionMet(brain IBrain, args ...any) bool {
 	return false
+}
+
+type simpleBackboardObserver struct {
+	brain IBrain
+	o     *ObservingDecorator
+}
+
+func (s *simpleBackboardObserver) Fire(op OpType, key string, oldValue any, newValue any) {
+	s.o.Evaluate(s.brain, op, key, oldValue, newValue)
 }
