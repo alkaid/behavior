@@ -245,7 +245,7 @@ var count = 0
 func (g *GameDdz) ReqOpt() error {
 	count++
 	go func() {
-		if count > 2 {
+		if count > 3 {
 			g.brain.Blackboard().Set("gameFsmj.subscene.int", -1)
 		} else {
 			g.brain.Blackboard().Set("gameFsmj.subscene.int", 2)
@@ -257,6 +257,7 @@ func (g *GameDdz) ReqOpt() error {
 func (g *GameDdz) ReqRise() error {
 	count++
 	go func() {
+		time.Sleep(time.Second * 3)
 		if count > 2 {
 			g.brain.Blackboard().Set("gameFsmj.subscene.int", -1)
 		} else {

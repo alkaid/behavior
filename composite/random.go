@@ -67,10 +67,10 @@ func (r *RandomWorker) OnOrder(brain bcore.IBrain, originChildrenOrder []int) (o
 		realWeights = lo.DropRight(weights, len(weights)-len(originChildrenOrder))
 	} else {
 		// 填充最小值
-		min := lo.Min(weights)
+		minN := lo.Min(weights)
 		right := make([]int, len(originChildrenOrder)-len(weights))
 		for i := 0; i < len(right); i++ {
-			right[i] = min
+			right[i] = minN
 		}
 		realWeights = weights
 		realWeights = append(realWeights, right...)

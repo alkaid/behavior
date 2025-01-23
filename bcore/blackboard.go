@@ -2,7 +2,6 @@ package bcore
 
 import (
 	stderr "errors"
-	"reflect"
 	"sync"
 	"time"
 
@@ -151,7 +150,7 @@ func (b *Blackboard) Stop() {
 	b.memoryMutex.Unlock()
 	// 从父黑板中移除自己
 	if b.parent != nil {
-		b.parent.children = lo.DropWhile(b.parent.children, func(v *Blackboard) bool { return v == b })
+		b.parent.children = lo.Reject(b.parent.children, func(v *Blackboard, _ int) bool { return v == b })
 	}
 }
 
@@ -195,9 +194,8 @@ func (b *Blackboard) addOrRmObserver(add bool, key string, observer Observer) {
 	}
 	if !add {
 		if contains {
-			observerPtr := reflect.ValueOf(observer).Pointer()
-			b.observers[key] = lo.DropWhile(observers, func(v Observer) bool {
-				return observerPtr == reflect.ValueOf(v).Pointer()
+			b.observers[key] = lo.Reject(observers, func(v Observer, _ int) bool {
+				return observer == v
 			})
 			return
 		}
@@ -220,7 +218,10 @@ func (b *Blackboard) addOrRmObserver(add bool, key string, observer Observer) {
 //	@param newVal
 func (b *Blackboard) notify(op OpType, key string, oldVal any, newVal any) {
 	// 无论调用方是否在AI线程里,都兜底派发到AI线程,使监听函数在AI线程里串行
+	//id := util.NanoID()
+	//logger.Log.Debug("[blackboard]notify", zap.String("id", id), zap.String("key", key), zap.Any("oldVal", oldVal), zap.Any("newVal", newVal))
 	thread.GoByID(b.threadID, func() {
+		//logger.Log.Debug("[blackboard]notifyCall", zap.String("id", id))
 		if !b.enable {
 			return
 		}
