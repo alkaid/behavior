@@ -217,6 +217,7 @@ func (b *Blackboard) addOrRmObserver(add bool, key string, observer Observer) {
 //	@param oldVal
 //	@param newVal
 func (b *Blackboard) notify(op OpType, key string, oldVal any, newVal any) {
+	// TODO 可能会调用多次,尤其是条件节点首次set时其实不应该执行,这里后续需要优化合批
 	// 无论调用方是否在AI线程里,都兜底派发到AI线程,使监听函数在AI线程里串行
 	//id := util.NanoID()
 	//logger.Log.Debug("[blackboard]notify", zap.String("id", id), zap.String("key", key), zap.Any("oldVal", oldVal), zap.Any("newVal", newVal))
@@ -225,6 +226,8 @@ func (b *Blackboard) notify(op OpType, key string, oldVal any, newVal any) {
 		if !b.enable {
 			return
 		}
+		// 必须取最新值
+		newVal, _ = b.Get(key)
 		for _, ob := range b.observers[key] {
 			ob.Fire(op, key, oldVal, newVal)
 		}
