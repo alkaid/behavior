@@ -3,6 +3,7 @@ package behavior
 import (
 	"context"
 	"fmt"
+	"github.com/alkaid/behavior/internal"
 	"reflect"
 	"time"
 
@@ -242,6 +243,9 @@ func (b *Brain) OnNodeUpdate(target string, method string, brain bcore.IBrain, e
 	}
 	handler := GlobalHandlerPool().GetHandle(target, method)
 	if handler == nil || handler.MethodType == handle2.MtNone {
+		if internal.GlobalConfig.ActionSuccessIfNotDelegate {
+			return bcore.ResultSucceeded
+		}
 		log.Error("handler is nil,please register target to GlobalHandlerPool() before run behavior tree")
 		return bcore.ResultFailed
 	}

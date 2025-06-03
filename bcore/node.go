@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/alkaid/behavior/internal"
 	"time"
 
 	"github.com/alkaid/behavior/util"
@@ -446,6 +447,9 @@ func (n *Node) OnUpdate(brain IBrain, eventType EventType, delta time.Duration) 
 	// 脚本不存在,改用委托
 	if n.delegator.Method == "" {
 		log.Debug("method not found,return ResultFailed")
+		if internal.GlobalConfig.ActionSuccessIfNotDelegate {
+			return ResultSucceeded
+		}
 		return ResultFailed
 	}
 	// 若当前节点没有delegator target,使用root的delegator target作为默认

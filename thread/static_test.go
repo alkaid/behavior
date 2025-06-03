@@ -38,57 +38,56 @@ func Test_ThreadSafe(t *testing.T) {
 	GoByID(1, func() {
 		for i := 0; i < 5; i++ {
 			t.Log("t1.1:", i)
-			time.Sleep(time.Second)
 			if i == 1 {
+				wg.Add(1)
 				GoByID(1, func() {
 					for j := 0; j < 5; j++ {
 						t.Log("t1.2:", j)
-						time.Sleep(time.Second)
 					}
+					wg.Done()
 				})
 			}
 		}
+		wg.Done()
 	})
 	p, err := ants.NewPoolWithID(ants.DefaultAntsPoolSize, ants.WithExpiryDuration(time.Hour))
 	if err != nil {
 		t.Error(err)
 	}
+	wg.Add(1)
 	p.Submit(1, func() {
 		for i := 0; i < 5; i++ {
 			t.Log("t4.1:", i)
-			time.Sleep(time.Second)
 		}
+		wg.Done()
 	})
+	wg.Add(1)
 	GoByID(2, func() {
 		for i := 0; i < 5; i++ {
 			t.Log("t2.1:", i)
-			time.Sleep(time.Second)
 		}
+		wg.Done()
 	})
-	// GoByID(3, func() {
-	// 	for i := 0; i < 5; i++ {
-	// 		t.Log("t3.1:", i)
-	// 		time.Sleep(time.Second)
-	// 	}
-	// })
+	wg.Add(1)
+	GoByID(3, func() {
+		for i := 0; i < 5; i++ {
+			t.Log("t3.1:", i)
+		}
+		wg.Done()
+	})
 	wg.Wait()
 }
 func TestGoByID(t *testing.T) {
-	type args struct {
-		goID int
-		task func()
-	}
-	tests := []struct {
-		name string
-		args args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			GoByID(tt.args.goID, tt.args.task)
-		})
-	}
+	help(t)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	GoByID(3, func() {
+		for i := 0; i < 5; i++ {
+			t.Log("t3.1:", i)
+		}
+		wg.Done()
+	})
+	wg.Wait()
 }
 
 func TestGoMain(t *testing.T) {

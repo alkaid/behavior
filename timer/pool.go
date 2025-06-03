@@ -1,7 +1,7 @@
 package timer
 
 import (
-	"math/rand"
+	"math/rand/v2"
 	"sync/atomic"
 	"time"
 
@@ -16,11 +16,11 @@ type TimeWheelPool struct {
 }
 
 // NewTimeWheelPool
-//  @param size 池子容量
-//  @param interval 时间轮帧间隔
-//  @param numSlots 时间槽数量 时间轮第一层总时长=interval*numSlots
-//  @return *TimeWheelPool
 //
+//	@param size 池子容量
+//	@param interval 时间轮帧间隔
+//	@param numSlots 时间槽数量 时间轮第一层总时长=interval*numSlots
+//	@return *TimeWheelPool
 func NewTimeWheelPool(size int, interval time.Duration, numSlots int) *TimeWheelPool {
 	twp := &TimeWheelPool{
 		pool: make([]*timingwheel.TimingWheel, size),
@@ -34,9 +34,9 @@ func NewTimeWheelPool(size int, interval time.Duration, numSlots int) *TimeWheel
 }
 
 // Get 顺序获取下一个时间轮
-//  @receiver tp
-//  @return *TimeWheel
 //
+//	@receiver tp
+//	@return *TimeWheel
 func (tp *TimeWheelPool) Get() *timingwheel.TimingWheel {
 	incr := atomic.AddInt64(&tp.incr, 1)
 	idx := incr % tp.size
@@ -44,16 +44,16 @@ func (tp *TimeWheelPool) Get() *timingwheel.TimingWheel {
 }
 
 // GetRandom 随机获取一个时间轮
-//  @receiver tp
-//  @return *TimeWheel
 //
+//	@receiver tp
+//	@return *TimeWheel
 func (tp *TimeWheelPool) GetRandom() *timingwheel.TimingWheel {
-	return tp.pool[rand.Intn(int(tp.size))]
+	return tp.pool[rand.IntN(int(tp.size))]
 }
 
 // Start 启动
-//  @receiver tp
 //
+//	@receiver tp
 func (tp *TimeWheelPool) Start() {
 	for _, tw := range tp.pool {
 		tw.Start()
@@ -61,8 +61,8 @@ func (tp *TimeWheelPool) Start() {
 }
 
 // Stop 停止
-//  @receiver tp
 //
+//	@receiver tp
 func (tp *TimeWheelPool) Stop() {
 	for _, tw := range tp.pool {
 		tw.Stop()

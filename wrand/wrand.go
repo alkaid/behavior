@@ -2,7 +2,7 @@ package wrand
 
 import (
 	"errors"
-	"math/rand"
+	"math/rand/v2"
 	"sort"
 
 	"github.com/samber/lo"
@@ -107,7 +107,7 @@ var (
 //
 // Utilizes global rand as the source of randomness.
 func (c Chooser) Pick() (key any, item interface{}) {
-	i := searchInts(c.totals, rand.Intn(c.max)+1)
+	i := searchInts(c.totals, rand.IntN(c.max)+1)
 	return c.data[i].Key, c.data[i].Item
 }
 

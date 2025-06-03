@@ -1,7 +1,7 @@
 package decorator
 
 import (
-	"math/rand"
+	"math/rand/v2"
 
 	"github.com/alkaid/behavior/bcore"
 )

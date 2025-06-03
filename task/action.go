@@ -1,6 +1,7 @@
 package task
 
 import (
+	"github.com/alkaid/behavior/internal"
 	"time"
 
 	"github.com/alkaid/behavior/bcore"
@@ -44,7 +45,7 @@ type Action struct {
 func (a *Action) OnStart(brain bcore.IBrain) {
 	a.Task.OnStart(brain)
 	if !a.HasDelegatorOrScript() {
-		a.Finish(brain, false)
+		a.Finish(brain, internal.GlobalConfig.ActionSuccessIfNotDelegate)
 		return
 	}
 	result := a.Update(brain, bcore.EventTypeOnStart, 0)
@@ -64,7 +65,7 @@ func (a *Action) OnStart(brain bcore.IBrain) {
 		currTime := time.Now()
 		delta := currTime.Sub(lastTime)
 		lastTime = currTime
-		result := a.Update(brain, bcore.EventTypeOnUpdate, delta)
+		result = a.Update(brain, bcore.EventTypeOnUpdate, delta)
 		if result != bcore.ResultInProgress {
 			a.stopTimer(brain)
 			a.Finish(brain, result == bcore.ResultSucceeded)

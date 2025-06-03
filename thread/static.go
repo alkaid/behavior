@@ -35,7 +35,7 @@ func InitPool(p *ants.PoolWithID) error {
 		ants.DefaultAntsPoolSize,
 		ants.WithTaskBuffer(DefaultTaskBuffer),
 		ants.WithExpiryDuration(time.Hour),
-		ants.WithDisablePurgeRunning(true))
+		ants.WithDisablePurgeRunning(false))
 	if err != nil {
 		return errors.WithStack(err)
 	}

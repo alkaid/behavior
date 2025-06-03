@@ -243,8 +243,8 @@ func (b *Blackboard) notify(op OpType, key string, oldVal any, newVal any) {
 //	@return bool
 func (b *Blackboard) Get(key string) (any, bool) {
 	b.memoryMutex.RLock()
-	defer b.memoryMutex.RUnlock()
 	val, ok := b.userMemory[key]
+	b.memoryMutex.RUnlock()
 	if ok || b.parent == nil {
 		return val, ok
 	}
@@ -267,6 +267,10 @@ func (b *Blackboard) GetDuration(key string) (time.Duration, bool) {
 		return v, ok
 	case int64:
 		return time.Duration(v), ok
+	case int:
+		return time.Duration(v), ok
+	case int32:
+		return time.Duration(v), ok
 	case string:
 		tm, err := time.ParseDuration(v)
 		if err != nil {
@@ -286,8 +290,6 @@ func (b *Blackboard) GetDuration(key string) (time.Duration, bool) {
 //	@param key
 //	@param val
 func (b *Blackboard) Set(key string, val any) {
-	b.memoryMutex.Lock()
-	defer b.memoryMutex.Unlock()
 	// 优先设置父黑板
 	if b.parent != nil {
 		_, ok := b.parent.Get(key)
@@ -297,11 +299,14 @@ func (b *Blackboard) Set(key string, val any) {
 		}
 	}
 	op := OpAdd
+	b.memoryMutex.Lock()
 	oldVal, ok := b.userMemory[key]
 	if ok {
 		op = OpChange
 	}
 	b.userMemory[key] = val
+	b.memoryMutex.Unlock()
+	// 要把notify排除在锁范围外,避免线程派发信道堵塞时长时间占用锁
 	b.notify(op, key, oldVal, val)
 }
 
@@ -312,13 +317,16 @@ func (b *Blackboard) Set(key string, val any) {
 //	@param key
 func (b *Blackboard) Del(key string) {
 	b.memoryMutex.Lock()
-	defer b.memoryMutex.Unlock()
 	op := OpDel
 	oldVal, ok := b.userMemory[key]
 	if ok {
 		delete(b.userMemory, key)
-		b.notify(op, key, oldVal, nil)
 	}
+	b.memoryMutex.Unlock()
+	if !ok {
+		return
+	}
+	b.notify(op, key, oldVal, nil)
 }
 
 var _ IBlackboard = (*Blackboard)(nil)

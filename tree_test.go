@@ -1,7 +1,9 @@
 package behavior
 
 import (
-	"math/rand"
+	"github.com/panjf2000/ants/v2"
+	"github.com/samber/lo"
+	"math/rand/v2"
 	"testing"
 	"time"
 
@@ -14,7 +16,15 @@ import (
 )
 
 func help() {
-	InitSystem(WithLogDevelopment(true), WithLogLevel(zapcore.DebugLevel))
+	p, err := ants.NewPoolWithID(
+		ants.DefaultAntsPoolSize,
+		//ants.WithTaskBuffer(10),
+		ants.WithExpiryDuration(time.Hour),
+		ants.WithDisablePurgeRunning(false))
+	if err != nil {
+		panic(err)
+	}
+	InitSystem(WithLogDevelopment(true), WithLogLevel(zapcore.DebugLevel), WithThreadPool(p), WithActionSuccessIfNotDelegate())
 }
 
 func TestTreeRegistry_LoadFromPaths(t *testing.T) {
@@ -24,7 +34,7 @@ func TestTreeRegistry_LoadFromPaths(t *testing.T) {
 		paths   []string
 		wantErr bool
 	}{
-		{"test1", []string{"/home/alkaid/bt1.json"}, false},
+		{"test1", []string{"/tmp/export/bt1.json"}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -266,4 +276,90 @@ func (g *GameDdz) ReqRise() error {
 	}()
 	time.Sleep(time.Second)
 	return nil
+}
+
+type GameMock struct {
+	brain   bcore.IBrain
+	lastTag string
+}
+
+func (g *GameMock) DynamicDecorate() error {
+	tag, _ := lo.Find(subTreeTags, func(item string) bool {
+		return item != g.lastTag
+	})
+	g.lastTag = tag
+	return g.brain.DynamicDecorate("subgame", tag)
+}
+func (g *GameMock) Reset()          {}
+func (g *GameMock) GetScene()       {}
+func (g *GameMock) ReqReadyAction() {}
+func (g *GameMock) ReqAi()          {}
+func (g *GameMock) ReqOpt()         {}
+
+var subTreeTags = []string{"GameCndw", "GameFsmj"}
+
+func TestBBMapSafe(t *testing.T) {
+	help()
+	var paths = []string{
+		"/tmp/export/test_bb_map_safe.json",
+		"/tmp/export/game_cndw.json",
+		"/tmp/export/game_cndw_play.json",
+		"/tmp/export/game_fsmj.json",
+		"/tmp/export/game_fsmj_edge_opt.json",
+		"/tmp/export/game_fsmj_edge_tiles.json",
+		"/tmp/export/game_fsmj_giveup.json",
+		"/tmp/export/game_fsmj_play.json",
+		"/tmp/export/game_fsmj_skill.json",
+	}
+	if err := GlobalTreeRegistry().LoadFromPaths(paths); err != nil {
+		logger.Log.Error("", zap.Error(err))
+		t.Errorf("LoadFromPaths() error = %v,", err)
+	}
+	fch := make(chan *bcore.FinishEvent, 10)
+	game := &GameMock{}
+	RegisterDelegatorType("Game", game)
+	RegisterDelegatorType("GameCndw", game)
+	RegisterDelegatorType("GameFsmj", game)
+	RegisterDelegatorType(nameGameDdz, game)
+	brain := NewBrain(bcore.NewBlackboard(100, nil), map[string]any{nameGameDdz: game, "Game": game, "GameCndw": game, "GameFsmj": game}, fch)
+	game.brain = brain
+	if err := brain.Run("main", false); err != nil {
+		t.Error(err)
+	}
+	brain.Blackboard().Set("gameFsmj.opt.wait", 0)
+	brain.Blackboard().Set("gameCndw.opt.wait", 0)
+	brain.Blackboard().Set("game.inroom.bool", true)
+	goBbInt(brain, "gameFsmj.subscene.int", 2000, 9)
+	goBbInt(brain, "gameCndw.subscene.int", 2000, 3)
+	goBbBool(brain, "game.inroom.bool", 5000)
+	goBbBool(brain, "gameFsmj.settlement.bool", 2000)
+	goBbBool(brain, "gameCndw.settlement.bool", 2000)
+	goBbInt(brain, "gameFsmj.giveup.type", 2000, 4)
+	goBbBool(brain, "gameCndw.tablecheck.bool", 2000)
+	goBbBool(brain, "gameCndw.opt.bool", 2000)
+	goBbBool(brain, "gameFsmj.opt.bool", 2000)
+	goBbBool(brain, "gameFsmj.skill.bool", 2000)
+	<-fch
+}
+
+func goBbBool(brain bcore.IBrain, key string, maxMill int64) {
+	for i := 0; i < 20; i++ {
+		val := i%2 == 0
+		go func() {
+			for {
+				time.Sleep(time.Millisecond * time.Duration(rand.Int64N(10)))
+				brain.Blackboard().Set(key, val)
+			}
+		}()
+	}
+}
+func goBbInt(brain bcore.IBrain, key string, maxMill int64, max int) {
+	for i := 0; i < 10; i++ {
+		go func() {
+			for {
+				time.Sleep(time.Millisecond * time.Duration(rand.Int64N(10)))
+				brain.Blackboard().Set(key, rand.IntN(max))
+			}
+		}()
+	}
 }

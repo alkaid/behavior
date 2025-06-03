@@ -1,7 +1,6 @@
 package timer
 
 import (
-	"math/rand"
 	"reflect"
 	"sync"
 	"testing"
@@ -11,7 +10,6 @@ import (
 )
 
 func helper() {
-	rand.Seed(time.Now().UnixNano())
 	InitPool(1, 10*time.Millisecond, 100)
 }
 

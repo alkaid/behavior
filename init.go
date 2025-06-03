@@ -1,7 +1,7 @@
 package behavior
 
 import (
-	"math/rand"
+	"github.com/alkaid/behavior/internal"
 	"time"
 
 	"github.com/alkaid/behavior/script"
@@ -29,7 +29,6 @@ import (
 //	@param option
 //	@panic 若发生异常将主动panic
 func InitSystem(opts ...Option) {
-	rand.Seed(time.Now().UnixNano())
 	option := &InitialOption{
 		ThreadPool:        nil,
 		TimerPoolSize:     1,
@@ -157,5 +156,14 @@ func WithScriptPoolMaxSize(size int) Option {
 func WithScriptPoolApiLib(api map[string]any) Option {
 	return func(o *InitialOption) {
 		o.ScriptPoolApiLib = api
+	}
+}
+
+// WithActionSuccessIfNotDelegate 当委托方法不存在时,默认返回成功. 常用于debug时,避免每次都要写委托方法.
+//
+//	@return Option
+func WithActionSuccessIfNotDelegate() Option {
+	return func(o *InitialOption) {
+		internal.GlobalConfig.ActionSuccessIfNotDelegate = true
 	}
 }

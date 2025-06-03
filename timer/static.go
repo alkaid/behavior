@@ -1,7 +1,7 @@
 package timer
 
 import (
-	"math/rand"
+	"math/rand/v2"
 	"time"
 
 	"github.com/alkaid/timingwheel"
