@@ -1,7 +1,6 @@
 package bcore
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/alkaid/behavior/internal"
@@ -354,13 +353,11 @@ func (n *Node) SetRoot(brain IBrain, root IRoot) {
 	n.root = root
 }
 
-type BrainContextKey string
-
-var upstreamKey BrainContextKey = "_upstream"
+const upstreamKey = "_upstream"
 
 func (n *Node) SetUpstream(brain IBrain, upstream INode) {
 	ibrain := brain.(IBrainInternal)
-	ibrain.SetContext(context.WithValue(ibrain.Context(), upstreamKey, upstream))
+	ibrain.LogContext()[upstreamKey] = upstream
 }
 
 // Start
@@ -553,7 +550,7 @@ func LogWithUpstream(brain IBrain, logg *zap.Logger) *zap.Logger {
 	if brain == nil {
 		return logg
 	}
-	upstreamAny := brain.(IBrainInternal).Context().Value(upstreamKey)
+	upstreamAny := brain.(IBrainInternal).LogContext()[upstreamKey]
 	if upstreamAny != nil {
 		upstream := upstreamAny.(INode)
 		return logg.With(zap.Namespace("upstream"), zap.String("name", upstream.Name()), zap.String("title", upstream.Title()), zap.Int("state", int(upstream.State(brain))))

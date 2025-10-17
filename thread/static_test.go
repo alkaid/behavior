@@ -1,6 +1,7 @@
 package thread
 
 import (
+	"math/rand/v2"
 	"sync"
 	"testing"
 	"time"
@@ -87,90 +88,56 @@ func TestGoByID(t *testing.T) {
 		}
 		wg.Done()
 	})
+	wg.Add(1)
+	GoByID(3, func() {
+		for i := 0; i < 5; i++ {
+			t.Log("t3.1:", i)
+		}
+		wg.Done()
+	})
 	wg.Wait()
 }
 
-func TestGoMain(t *testing.T) {
-	type args struct {
-		task func()
+// Test_HugeAmount 测试大量协程情况下能否正常跑完
+//
+//	@param t
+func Test_HugeAmount(t *testing.T) {
+	help(t)
+	var wg sync.WaitGroup
+	var calc = func() {
+		// 模拟一个耗时操作
+		time.Sleep(time.Microsecond * time.Duration(rand.IntN(1000)))
+		wg.Done()
 	}
-	tests := []struct {
-		name string
-		args args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			GoMain(tt.args.task)
+	for k := 0; k < 1000; k++ {
+		wg.Add(1)
+		GoByID(k, func() {
+			wg.Add(1)
+			GoByID(k+1, func() {
+				for i := 0; i < 5; i++ {
+					wg.Add(1)
+					GoByID(i, calc)
+				}
+				calc()
+			})
+			wg.Add(1)
+			GoByID(k+2, func() {
+				for i := 0; i < 5; i++ {
+					wg.Add(1)
+					GoByID(i, calc)
+				}
+				calc()
+			})
+			wg.Add(1)
+			GoByID(k+3, func() {
+				for i := 0; i < 5; i++ {
+					wg.Add(1)
+					GoByID(i, calc)
+				}
+				calc()
+			})
+			calc()
 		})
 	}
-}
-
-func TestInitPool(t *testing.T) {
-	type args struct {
-		p *ants.PoolWithID
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := InitPool(tt.args.p); (err != nil) != tt.wantErr {
-				t.Errorf("InitPool() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func TestReleaseTableGoPool(t *testing.T) {
-	tests := []struct {
-		name string
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ReleaseTableGoPool()
-		})
-	}
-}
-
-func TestWaitByID(t *testing.T) {
-	type args struct {
-		goID int
-		task func()
-	}
-	tests := []struct {
-		name string
-		args args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			WaitByID(tt.args.goID, tt.args.task)
-		})
-	}
-}
-
-func TestWaitMain(t *testing.T) {
-	type args struct {
-		task func()
-	}
-	tests := []struct {
-		name string
-		args args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			WaitMain(tt.args.task)
-		})
-	}
+	wg.Wait()
 }

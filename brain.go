@@ -1,7 +1,6 @@
 package behavior
 
 import (
-	"context"
 	"fmt"
 	"github.com/alkaid/behavior/internal"
 	"reflect"
@@ -37,7 +36,7 @@ type Brain struct {
 	delegatesMeta map[string]*bcore.DelegateMeta
 	finishChan    chan *bcore.FinishEvent // 供上层业务方使用的完成通知
 	root          bcore.IRoot
-	ctx           context.Context
+	logCtx        map[string]any
 }
 
 func (b *Brain) ID() int {
@@ -63,11 +62,8 @@ func (b *Brain) Running() bool {
 func (b *Brain) SetRunningTree(root bcore.IRoot) {
 	b.root = root
 }
-func (b *Brain) Context() context.Context {
-	return b.ctx
-}
-func (b *Brain) SetContext(ctx context.Context) {
-	b.ctx = ctx
+func (b *Brain) LogContext() map[string]any {
+	return b.logCtx
 }
 
 // NewBrain bcore.IBrain 实例
@@ -79,10 +75,10 @@ func NewBrain(blackboard bcore.IBlackboard, delegates map[string]any, finishChan
 	b := &Brain{
 		blackboard:    blackboard.(bcore.IBlackboardInternal),
 		delegatesMeta: map[string]*bcore.DelegateMeta{},
+		logCtx:        map[string]any{},
 	}
 	b.SetDelegates(delegates)
 	b.finishChan = finishChan
-	b.ctx = context.Background()
 	return b
 }
 

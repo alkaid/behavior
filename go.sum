@@ -1,5 +1,5 @@
-github.com/alkaid/ants/v2 v2.11.3-ak-2 h1:8v3TKShv6kqHk++DIsaXJEjQxdcoUHaETCbhtAOikKo=
-github.com/alkaid/ants/v2 v2.11.3-ak-2/go.mod h1:8u92CYMUc6gyvTIw8Ru7Mt7+/ESnJahz5EVtqfrilek=
+github.com/alkaid/ants/v2 v2.11.3-ak-4 h1:TGOgxEr2BjNOv5mF13EccVlmKXXwCG22ttCu7Tle4N4=
+github.com/alkaid/ants/v2 v2.11.3-ak-4/go.mod h1:8u92CYMUc6gyvTIw8Ru7Mt7+/ESnJahz5EVtqfrilek=
 github.com/alkaid/timingwheel v1.0.5 h1:KigbDN0nzjD21czQ6MWE6oYata419CNMxTtPwJr91/Q=
 github.com/alkaid/timingwheel v1.0.5/go.mod h1:VxPQ6WCMRm27VMzkmfFZ5J/Z5s7jiZa0w5GLPsAwjmQ=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
