@@ -2,14 +2,14 @@ package behavior
 
 import (
 	"fmt"
-	"github.com/alkaid/behavior/internal"
 	"reflect"
 	"time"
+
+	"github.com/alkaid/behavior/internal"
 
 	"github.com/samber/lo"
 
 	"github.com/alkaid/behavior/timer"
-	"github.com/alkaid/timingwheel"
 
 	"github.com/pkg/errors"
 
@@ -288,22 +288,22 @@ func (b *Brain) OnNodeUpdate(target string, method string, brain bcore.IBrain, e
 	return bcore.ResultFailed
 }
 
-// Cron wrap timingwheel.TimingWheel .Cron
+// Cron 将循环回调投递到黑板所属的串行线程。
 //
 //	@param interval 间隔
 //	@param randomDeviation 随机离差范围,interval=interval+randomDeviation*[-0.5,0.5)
 //	@param task
 //	@param opts
-func (b *Brain) Cron(interval time.Duration, randomDeviation time.Duration, task func()) *timingwheel.Timer {
-	return timer.Cron(interval, randomDeviation, task, timingwheel.WithGoID(b.blackboard.ThreadID()), timingwheel.WithPool(thread.PoolInstance()))
+func (b *Brain) Cron(interval time.Duration, randomDeviation time.Duration, task func()) *timer.Timer {
+	return timer.Cron(interval, randomDeviation, task, timer.WithGoID(b.blackboard.ThreadID()), timer.WithPool(thread.PoolInstance()))
 }
 
-// After wrap timingwheel.TimingWheel .AfterFunc
+// After 将单次回调投递到黑板所属的串行线程。
 //
 //	@param interval 间隔
 //	@param randomDeviation 随机离差范围 interval = interval + randomDeviation*[-0.5,0.5)
 //	@param task
 //	@param opts
-func (b *Brain) After(interval time.Duration, randomDeviation time.Duration, task func()) *timingwheel.Timer {
-	return timer.After(interval, randomDeviation, task, timingwheel.WithGoID(b.blackboard.ThreadID()), timingwheel.WithPool(thread.PoolInstance()))
+func (b *Brain) After(interval time.Duration, randomDeviation time.Duration, task func()) *timer.Timer {
+	return timer.After(interval, randomDeviation, task, timer.WithGoID(b.blackboard.ThreadID()), timer.WithPool(thread.PoolInstance()))
 }

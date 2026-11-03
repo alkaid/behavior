@@ -1,8 +1,9 @@
 package behavior
 
 import (
-	"github.com/alkaid/behavior/internal"
 	"time"
+
+	"github.com/alkaid/behavior/internal"
 
 	"github.com/alkaid/behavior/script"
 	"go.uber.org/zap"
@@ -20,7 +21,7 @@ import (
 	"github.com/alkaid/behavior/thread"
 	"github.com/alkaid/behavior/timer"
 
-	"github.com/panjf2000/ants/v2"
+	"github.com/alkaid/ants/v2"
 )
 
 // InitSystem 系统初始化

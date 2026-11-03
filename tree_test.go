@@ -1,11 +1,12 @@
 package behavior
 
 import (
-	"github.com/panjf2000/ants/v2"
-	"github.com/samber/lo"
 	"math/rand/v2"
 	"testing"
 	"time"
+
+	"github.com/alkaid/ants/v2"
+	"github.com/samber/lo"
 
 	"go.uber.org/zap/zapcore"
 

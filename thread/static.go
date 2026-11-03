@@ -7,8 +7,9 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/alkaid/ants/v2"
+	"github.com/alkaid/behavior/internal/dispatch"
 	"github.com/alkaid/behavior/logger"
-	"github.com/panjf2000/ants/v2"
 	"go.uber.org/zap"
 )
 
@@ -50,17 +51,16 @@ func ReleaseTableGoPool() {
 }
 
 // GoByID 根据指定的goroutineID派发线程
+// 按 ID 异步有序投递，满队列的准入等待不会阻塞当前 AI 回调。
 //
 //	@receiver h
 //	@param goID 若>0,派发到指定线程,否则随机派发
 //	@param task
 func GoByID[T int | int32 | int64](goID T, task func()) {
 	if goID > 0 {
-		err := pool.Submit(int(goID), task)
-		if err != nil {
+		dispatch.Submit(pool, int(goID), task, func(err error) {
 			logger.Log.Error("submit goroutine with id error", zap.Error(err), zap.Int("goID", int(goID)))
-			return
-		}
+		})
 	} else {
 		Go(task)
 	}

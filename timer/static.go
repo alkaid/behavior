@@ -4,7 +4,7 @@ import (
 	"math/rand/v2"
 	"time"
 
-	"github.com/alkaid/timingwheel"
+	"github.com/zeromicro/go-zero/core/collection"
 )
 
 var pool *TimeWheelPool // 全局时间轮单例,必须调用 InitPool 后方可使用
@@ -20,34 +20,33 @@ func InitPool(size int, interval time.Duration, numSlots int) {
 		return
 	}
 	pool = NewTimeWheelPool(size, interval, numSlots)
-	pool.Start()
 }
 
 // TimeWheelInstance 从 pool 里获取一个时间轮
 //
 //	@return *TimeWheel
-func TimeWheelInstance() *timingwheel.TimingWheel {
+func TimeWheelInstance() *collection.TimingWheel {
 	return pool.Get()
 }
 
-// Cron wrap timingwheel.TimingWheel .Cron
+// Cron 创建循环任务；随机离差只在创建时采样一次，后续沿用相同间隔。
 //
 //	@param interval 间隔
 //	@param randomDeviation 随机离差范围,interval=interval+randomDeviation*[-0.5,0.5)
 //	@param task
 //	@param opts
-func Cron(interval time.Duration, randomDeviation time.Duration, task func(), opts ...timingwheel.Option) *timingwheel.Timer {
+func Cron(interval time.Duration, randomDeviation time.Duration, task func(), opts ...Option) *Timer {
 	interval = interval - time.Duration(half*float32(randomDeviation)) + time.Duration(rand.Float32()*float32(randomDeviation))
-	return TimeWheelInstance().Cron(interval, task, opts...)
+	return newTimer(TimeWheelInstance(), interval, true, task, opts...)
 }
 
-// After wrap timingwheel.TimingWheel .AfterFunc
+// After 创建单次任务；非正延时在下一时间轮 tick 异步触发。
 //
 //	@param interval 间隔
 //	@param randomDeviation 随机离差范围 interval = interval + randomDeviation*[-0.5,0.5)
 //	@param task
 //	@param opts
-func After(interval time.Duration, randomDeviation time.Duration, task func(), opts ...timingwheel.Option) *timingwheel.Timer {
+func After(interval time.Duration, randomDeviation time.Duration, task func(), opts ...Option) *Timer {
 	interval = interval - time.Duration(half*float32(randomDeviation)) + time.Duration(rand.Float32()*float32(randomDeviation))
-	return TimeWheelInstance().AfterFunc(interval, task, opts...)
+	return newTimer(TimeWheelInstance(), interval, false, task, opts...)
 }

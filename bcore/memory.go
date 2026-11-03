@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/alkaid/timingwheel"
+	"github.com/alkaid/behavior/timer"
 
 	"github.com/alkaid/behavior/logger"
 	"go.uber.org/zap"
@@ -59,16 +59,16 @@ type NodeMemory struct {
 	//  2.随机组合节点:完成了几个子节点;
 	//  3.循环装饰器:当前为第几次循环
 	CurrIndex        int
-	ChildrenOrder    []int              // 孩子节点排序索引
-	Parallel         *ParallelMemory    // 并发节点的数据
-	CronTask         *timingwheel.Timer // 定时任务
-	DefaultObserver  Observer           // 默认监听函数
-	Cooling          bool               // 是否cd中
-	LimitReached     bool               // 是否达到限制
-	DecoratedDone    bool               // 被装饰节点是否完成
-	DecoratedSuccess bool               // 被装饰节点是否成功
-	Elapsed          time.Duration      // 启动后流逝的时间
-	Restarting       bool               // 是否正在重启,是 State 为 NodeStateAborting 时的一个细分状态
+	ChildrenOrder    []int           // 孩子节点排序索引
+	Parallel         *ParallelMemory // 并发节点的数据
+	CronTask         *timer.Timer    // 定时任务
+	DefaultObserver  Observer        // 默认监听函数
+	Cooling          bool            // 是否cd中
+	LimitReached     bool            // 是否达到限制
+	DecoratedDone    bool            // 被装饰节点是否完成
+	DecoratedSuccess bool            // 被装饰节点是否成功
+	Elapsed          time.Duration   // 启动后流逝的时间
+	Restarting       bool            // 是否正在重启,是 State 为 NodeStateAborting 时的一个细分状态
 }
 
 func NewNodeMemory() *NodeMemory {
